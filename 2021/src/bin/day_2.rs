@@ -19,6 +19,7 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
     use nom::branch::alt;
     use nom::multi::separated_list0;
     use nom::character::complete::newline;
+    use nom::combinator::all_consuming;
 
     let forward = map(separated_pair(tag("forward"), char(' '), i32), |(_, value)| Command::Forward(value));
     let up = map(separated_pair(tag("up"), char(' '), i32), |(_, value)| Command::Up(value));
@@ -27,7 +28,7 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
     let line = alt((forward, up, down));
     let file = separated_list0(newline, line);
 
-    let mut parse = map(file, |commands| ParsedInput { commands });
+    let mut parse = all_consuming(map(file, |commands| ParsedInput { commands }));
 
     parse(raw_input)
 }
