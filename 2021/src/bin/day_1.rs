@@ -9,10 +9,11 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
     use nom::character::complete::newline;
     use nom::multi::separated_list0;
     use nom::combinator::map;
+    use nom::combinator::all_consuming;
 
     let line = i32;
     let file = separated_list0(newline, line);
-    let mut parse = map(file, |depths| ParsedInput { depths });
+    let mut parse = all_consuming(map(file, |depths| ParsedInput { depths }));
 
     parse(raw_input)
 }
