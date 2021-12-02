@@ -1,101 +1,81 @@
-use aoc2021::prelude::*;
+use aoc2021::*;
 
-fn main() {
-    let course: Vec<String> = read_lines(2);
-
-    let position = calculate_position(&course);
-    println!("{}", position);
-
-    let position = calculate_position_2(&course);
-    println!("{}", position);
+enum Command {
+    Forward(i32),
+    Down(i32),
+    Up(i32),
 }
 
-fn calculate_position(course: &Vec<String>) -> i64 {
-    let mut horizontal_position = 0;
-    let mut depth = 0;
-
-    for line in course {
-        let mut parts: Vec<&str> = line.split(" ").collect();
-
-        let command = parts[0];
-        let value: i64 = parts[1].parse().unwrap();
-
-        match command {
-            "forward" => {
-                horizontal_position += value;
-            },
-            "down" => {
-                depth += value;
-            },
-            "up" => {
-                depth -= value;
-            },
-            _ => panic!("Unexpected command: {}", command),
-        }
-    }
-
-    horizontal_position * depth
+struct ParsedInput {
+    commands: Vec<Command>,
 }
 
-fn calculate_position_2(course: &Vec<String>) -> i64 {
-    let mut horizontal_position = 0;
-    let mut depth = 0;
-    let mut aim = 0;
+fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+    use nom::character::complete::i32;
+    use nom::bytes::complete::tag;
+    use nom::combinator::map;
+    use nom::character::complete::char;
+    use nom::sequence::separated_pair;
+    use nom::branch::alt;
+    use nom::multi::separated_list0;
+    use nom::character::complete::newline;
 
-    for line in course {
-        let mut parts: Vec<&str> = line.split(" ").collect();
+    let forward = map(separated_pair(tag("forward"), char(' '), i32), |(_, value)| Command::Forward(value));
+    let up = map(separated_pair(tag("up"), char(' '), i32), |(_, value)| Command::Up(value));
+    let down = map(separated_pair(tag("down"), char(' '), i32), |(_, value)| Command::Down(value));
 
-        let command = parts[0];
-        let value: i64 = parts[1].parse().unwrap();
+    let line = alt((forward, up, down));
+    let file = separated_list0(newline, line);
 
-        match command {
-            "forward" => {
-                horizontal_position += value;
-                depth += aim * value;
-            },
-            "down" => {
-                aim += value;
-            },
-            "up" => {
-                aim -= value;
-            },
-            _ => panic!("Unexpected command: {}", command),
-        }
-    }
+    let mut parse = map(file, |commands| ParsedInput { commands });
 
-    horizontal_position * depth
+    parse(raw_input)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+fn task_1(input: &ParsedInput) -> Result<i32> {
+    let (horizontal_position, depth) = input.commands.iter()
+        .fold((0, 0), |(horizontal_position, depth), command| {
+            match command {
+                Command::Forward(value) => {
+                    (horizontal_position + value, depth)
+                }
+                Command::Down(value) => {
+                    (horizontal_position, depth + value)
+                }
+                Command::Up(value) => {
+                    (horizontal_position, depth - value)
+                }
+            }
+        });
 
-    #[test]
-    fn calculate_position_works() {
-        let input = vec![
-            "forward 5",
-            "down 5",
-            "forward 8",
-            "up 3",
-            "down 8",
-            "forward 2",
-        ].into_iter().map(|s| s.to_string()).collect();
-
-        assert_eq!(calculate_position(&input), 150)
-    }
-
-    #[test]
-    fn calculate_position_2_works() {
-        let input = vec![
-            "forward 5",
-            "down 5",
-            "forward 8",
-            "up 3",
-            "down 8",
-            "forward 2",
-        ].into_iter().map(|s| s.to_string()).collect();
-
-        assert_eq!(calculate_position_2(&input), 900)
-    }
+    Ok(horizontal_position * depth)
 }
 
+fn task_2(input: &ParsedInput) -> Result<i32> {
+    let (horizontal_position, depth, _) = input.commands.iter()
+        .fold((0, 0, 0), |(horizontal_position, depth, aim), command| {
+            match command {
+                Command::Forward(value) => {
+                    (horizontal_position + value, depth + (aim * value), aim)
+                }
+                Command::Down(value) => {
+                    (horizontal_position, depth, aim + value)
+                }
+                Command::Up(value) => {
+                    (horizontal_position, depth, aim - value)
+                }
+            }
+        });
+
+    Ok(horizontal_position * depth)
+}
+
+aoc_main!(
+    day: 2,
+    test_input: "forward 5\ndown 5\nforward 8\nup 3\ndown 8\nforward 2",
+    parser: parse,
+    task_1: task_1,
+    expected_1: 150,
+    task_2: task_2,
+    expected_2: 900,
+);
