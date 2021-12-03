@@ -1,45 +1,32 @@
+use ndarray::{Array, Array2, Axis};
 use aoc2021::*;
 
-
-
 struct ParsedInput {
-    numbers: Vec<Vec<u32>>,
+    numbers: Array2<u8>,
 }
 
 fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
-    let map_to_u8 = |s: char| match s {
-        '1' => 1u32,
-        '0' => 0u32,
-        _ => panic!("Unexpected char: {}", s),
-    };
+    let rows = raw_input.lines().count();
+    let columns = raw_input.lines().next().unwrap().len();
 
-    let numbers = raw_input
-        .split("\n")
-        .into_iter()
-        .map(|s| s.chars().map(map_to_u8).collect::<Vec<u32>>())
-        .collect();
+    let mut array = Array::zeros((rows, columns));
 
-    Ok(("", ParsedInput { numbers }))
-}
+    let mut i = 0;
+    for row in raw_input.lines() {
+        let mut j = 0;
+        for ch in row.chars() {
+            array[[i, j]] = if ch == '1' { 1u8 } else { 0u8 };
 
-fn transposed<E: Default + Clone>(m: &Vec<Vec<E>>) -> Vec<Vec<E>> {
-    assert!(m.len() > 0);
-
-    let mut transposed = Vec::with_capacity(m[0].len());
-    for _ in 0..m[0].len() {
-        transposed.push(vec![E::default(); m.len()]);
-    }
-
-    for i in 0..m.len() {
-        for j in 0..m[0].len() {
-            transposed[j][i] = m[i][j].clone();
+            j += 1;
         }
+
+        i += 1;
     }
 
-    transposed
+    Ok(("", ParsedInput { numbers: array }))
 }
 
-fn count_zeros_and_ones(v: &Vec<u32>) -> (i32, i32) {
+fn count_zeros_and_ones<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> (i32, i32) {
     let mut zeros = 0;
     let mut ones = 0;
 
@@ -54,53 +41,49 @@ fn count_zeros_and_ones(v: &Vec<u32>) -> (i32, i32) {
     (zeros, ones)
 }
 
-fn binary_vec_to_u32(v: &Vec<u32>) -> u32 {
+fn binary_to_u32<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> u32
+    where <I as IntoIterator>::IntoIter: DoubleEndedIterator {
     let mut result: u32 = 0;
-    for i in 0..v.len() {
-        result |= v[i] << (v.len() - i - 1);
+    let mut i = 0;
+    for &el in v.into_iter().rev() {
+        result |= (el as u32 & 1u32) << i;
+        i += 1;
     }
 
     result
 }
 
 fn task_1(input: &ParsedInput) -> Result<i32> {
-    let transposed = transposed(&input.numbers);
-
-    let most_common = |row| {
-        let (zeros, ones) = count_zeros_and_ones(row);
-        if zeros > ones { 0 } else { 1 }
-    };
-
-    let least_common = |row| {
-        let (zeros, ones) = count_zeros_and_ones(row);
-        if zeros < ones { 0 } else { 1 }
-    };
-
     // Most common number (0 or 1) in each column
-    let most_common_numbers: Vec<u32> = transposed.iter()
-        .map(most_common)
+    let most_common_numbers: Vec<u8> = input.numbers.columns().into_iter()
+        .map(|column| {
+            let (zeros, ones) = count_zeros_and_ones(&column);
+            if zeros > ones { 0u8 } else { 1u8 }
+        })
         .collect();
 
-    let gamma: u32 = binary_vec_to_u32(&most_common_numbers);
+    let gamma: u32 = binary_to_u32(&most_common_numbers);
 
     // Least common number (0 or 1) in each column
-    let least_common_numbers: Vec<u32> = transposed.iter()
-        .map(least_common)
+    let least_common_numbers: Vec<u8> = input.numbers.columns().into_iter()
+        .map(|column| {
+            let (zeros, ones) = count_zeros_and_ones(&column);
+            if zeros < ones { 0u8 } else { 1u8 }
+        })
         .collect();
 
-    let epsilon: u32 = binary_vec_to_u32(&least_common_numbers);
+    let epsilon: u32 = binary_to_u32(&least_common_numbers);
 
     Ok((gamma * epsilon) as i32)
 }
 
 fn task_2(input: &ParsedInput) -> Result<i32> {
     // Find oxygen generator rating
-    let mut candidates: Vec<Vec<u32>> = input.numbers.iter().map(|r| r.clone()).collect();
+    let mut candidates: Array2<u8> = input.numbers.clone();
     let mut position: usize = 0;
     let oxygen_generator_rating = loop {
-        let columns = transposed(&candidates);
-        let column = &columns[position];
-        let (zeros, ones) = count_zeros_and_ones(column);
+        let column = candidates.column(position);
+        let (zeros, ones) = count_zeros_and_ones(&column);
 
         let filter_number = if zeros > ones {
             0
@@ -108,26 +91,27 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
             1
         };
 
-        candidates.retain(|row| {
-            row[position] == filter_number
-        });
+        let indices: Vec<usize> = (0..candidates.nrows())
+            .filter(|&i| candidates[[i, position]] != filter_number)
+            .collect();
 
-        assert!(candidates.len() > 0);
+        candidates = candidates.select(Axis(0), &indices);
 
-        if candidates.len() == 1 {
-            break binary_vec_to_u32(&candidates[0])
+        assert!(candidates.nrows() > 0);
+
+        if candidates.nrows() == 1 {
+            break binary_to_u32(&candidates.row(0))
         }
 
         position += 1;
     };
 
     // Find CO2 scrubber rating
-    let mut candidates: Vec<Vec<u32>> = input.numbers.iter().map(|r| r.clone()).collect();
+    let mut candidates: Array2<u8> = input.numbers.clone();
     let mut position: usize = 0;
     let co2_scrubber_rating = loop {
-        let columns = transposed(&candidates);
-        let column = &columns[position];
-        let (zeros, ones) = count_zeros_and_ones(column);
+        let column = candidates.column(position);
+        let (zeros, ones) = count_zeros_and_ones(&column);
 
         let filter_number = if ones < zeros {
             1
@@ -135,14 +119,16 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
             0
         };
 
-        candidates.retain(|row| {
-            row[position] == filter_number
-        });
+        let indices: Vec<usize> = (0..candidates.nrows())
+            .filter(|&i| candidates[[i, position]] != filter_number)
+            .collect();
 
-        assert!(candidates.len() > 0);
+        candidates = candidates.select(Axis(0), &indices);
 
-        if candidates.len() == 1 {
-            break binary_vec_to_u32(&candidates[0])
+        assert!(candidates.nrows() > 0);
+
+        if candidates.nrows() == 1 {
+            break binary_to_u32(&candidates.row(0))
         }
 
         position += 1;

@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 nom = "7.1.0"
+num-traits = "0.2.14"
+ndarray = "0.15.4"
