@@ -1,42 +1,53 @@
-use ndarray::{Array1, Array2, ArrayView2};
+use ndarray::{Array1, Array2};
 use aoc2021::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct ParsedInput {
     drawn_numbers: Array1<i32>,
-    boards: Vec<Array2<i32>>,
+    boards: Vec<Board>,
 }
 
-struct Board<'a> {
-    numbers: ArrayView2<'a, i32>,
-    marked: Array2<i32>,
+#[derive(Clone, Debug)]
+struct Board {
+    numbers: Array2<i32>,
 }
 
-impl<'a> Board<'a> {
-    fn from_array2(board: ArrayView2<'a, i32>) -> Board {
+impl Board {
+    fn from_2d_vecs(rows: Vec<Vec<i32>>) -> Board {
+        let n_rows = rows.len();
+        let n_cols = rows.first().map_or(0, |row| row.len());
+
+        let mut data = Vec::with_capacity(n_rows * n_cols);
+        for row in rows {
+            data.extend_from_slice(&row);
+        }
+
+        Board::from_array2(Array2::from_shape_vec((n_rows, n_cols), data).unwrap())
+    }
+
+    fn from_array2(board: Array2<i32>) -> Board {
         Board {
             numbers: board,
-            marked: Array2::zeros((board.nrows(), board.ncols())),
         }
     }
 
     fn mark_number(&mut self, number_to_mark: i32) {
-        for (idx, &num) in self.numbers.iter().enumerate() {
-            if num == number_to_mark {
-                self.marked.as_slice_mut().unwrap()[idx] = 1;
+        for num in self.numbers.iter_mut() {
+            if *num == number_to_mark {
+                *num = 0;
             }
         }
     }
 
     fn wins(&self) -> bool {
-        for column in self.marked.columns() {
-            if column.sum() == column.len() as i32{
+        for column in self.numbers.columns() {
+            if column.sum() == 0 {
                 return true;
             }
         }
 
-        for row in self.marked.rows() {
-            if row.sum() == row.len() as i32 {
+        for row in self.numbers.rows() {
+            if row.sum() == 0 {
                 return true;
             }
         }
@@ -45,13 +56,7 @@ impl<'a> Board<'a> {
     }
 
     fn score(&self, last_drawn_number: i32) -> i32 {
-        let mut sum_of_unmarked_numbers = 0;
-
-        for (idx, &marked) in self.marked.iter().enumerate() {
-            if marked == 0 {
-                sum_of_unmarked_numbers += self.numbers.as_slice().unwrap()[idx];
-            }
-        }
+        let mut sum_of_unmarked_numbers = self.numbers.sum();
 
         last_drawn_number * sum_of_unmarked_numbers
     }
@@ -68,17 +73,7 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
     let single_board_number = preceded(many0(char(' ')), i32);
 
     let board_row = terminated(many1(single_board_number), opt(newline));
-    let board = map(many1(board_row), |rows| {
-        let n_rows = rows.len();
-        let n_cols = rows.first().map_or(0, |row| row.len());
-
-        let mut data = Vec::with_capacity(n_rows * n_cols);
-        for row in rows {
-            data.extend_from_slice(&row);
-        }
-
-        Array2::from_shape_vec((n_rows, n_cols), data).unwrap()
-    });
+    let board = map(many1(board_row), Board::from_2d_vecs);
 
     let file = all_consuming(tuple((terminated(drawn_numbers, newline), separated_list1(newline, board))));
 
@@ -90,9 +85,7 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
 }
 
 fn task_1(input: &ParsedInput) -> Result<i32> {
-    let mut boards: Vec<Board> = input.boards.iter()
-        .map(|numbers| Board::from_array2(numbers.view()))
-        .collect();
+    let mut boards: Vec<Board> = input.boards.clone();
 
     for &drawn_number in &input.drawn_numbers {
         for board in &mut boards {
@@ -108,9 +101,7 @@ fn task_1(input: &ParsedInput) -> Result<i32> {
 }
 
 fn task_2(input: &ParsedInput) -> Result<i32> {
-    let mut boards: Vec<Board> = input.boards.iter()
-        .map(|numbers| Board::from_array2(numbers.view()))
-        .collect();
+    let mut boards: Vec<Board> = input.boards.clone();
 
     for &drawn_number in &input.drawn_numbers {
         assert!(boards.len() > 0);
