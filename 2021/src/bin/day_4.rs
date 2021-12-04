@@ -10,6 +10,7 @@ struct ParsedInput {
 #[derive(Clone, Debug)]
 struct Board {
     numbers: Array2<i32>,
+    marked: Array2<i32>,
 }
 
 impl Board {
@@ -27,27 +28,28 @@ impl Board {
 
     fn from_array2(board: Array2<i32>) -> Board {
         Board {
+            marked: Array2::zeros((board.nrows(), board.ncols())),
             numbers: board,
         }
     }
 
     fn mark_number(&mut self, number_to_mark: i32) {
-        for num in self.numbers.iter_mut() {
-            if *num == number_to_mark {
-                *num = 0;
+        for (idx, &num) in self.numbers.iter().enumerate() {
+            if num == number_to_mark {
+                self.marked.as_slice_mut().unwrap()[idx] = 1;
             }
         }
     }
 
     fn wins(&self) -> bool {
-        for column in self.numbers.columns() {
-            if column.sum() == 0 {
+        for column in self.marked.columns() {
+            if column.sum() == column.len() as i32{
                 return true;
             }
         }
 
-        for row in self.numbers.rows() {
-            if row.sum() == 0 {
+        for row in self.marked.rows() {
+            if row.sum() == row.len() as i32 {
                 return true;
             }
         }
@@ -56,7 +58,13 @@ impl Board {
     }
 
     fn score(&self, last_drawn_number: i32) -> i32 {
-        let mut sum_of_unmarked_numbers = self.numbers.sum();
+        let mut sum_of_unmarked_numbers = 0;
+
+        for (idx, &marked) in self.marked.iter().enumerate() {
+            if marked == 0 {
+                sum_of_unmarked_numbers += self.numbers.as_slice().unwrap()[idx];
+            }
+        }
 
         last_drawn_number * sum_of_unmarked_numbers
     }
