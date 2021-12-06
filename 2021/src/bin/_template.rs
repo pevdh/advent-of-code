@@ -4,15 +4,15 @@ use aoc2021::*;
 struct ParsedInput {
 }
 
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(_raw_input: &str) -> ParseResult<ParsedInput> {
     todo!()
 }
 
-fn task_1(input: &ParsedInput) -> Result<i32> {
+fn task_1(_input: &ParsedInput) -> Result<i32> {
     todo!()
 }
 
-fn task_2(input: &ParsedInput) -> Result<i32> {
+fn task_2(_input: &ParsedInput) -> Result<i32> {
     todo!()
 }
 
