@@ -2,6 +2,7 @@ pub use std::collections::{
     HashMap,
     HashSet
 };
+use std::fmt::{Debug, Display};
 use nom::error::{convert_error, VerboseError};
 use nom::Finish;
 
@@ -11,24 +12,26 @@ pub type ParseResult<'a, S> = nom::IResult<&'a str, S, VerboseError<&'a str>>;
 
 pub struct AdventOfCodeSolution<
     I,
+    O,
     P: Fn(&str) -> ParseResult<I>,
-    T1: Fn(&I) -> Result<i32>,
-    T2: Fn(&I) -> Result<i32>,
+    T1: Fn(&I) -> Result<O>,
+    T2: Fn(&I) -> Result<O>,
 > {
     pub day: u32,
     pub test_input: &'static str,
     pub parser: P,
     pub task_1: T1,
-    pub expected_1: i32,
+    pub expected_1: O,
     pub task_2: T2,
-    pub expected_2: i32,
+    pub expected_2: O,
 }
 
-pub fn run<I, P, T1, T2>(solution: AdventOfCodeSolution<I, P, T1, T2>)
+pub fn run<I, O, P, T1, T2>(solution: AdventOfCodeSolution<I, O, P, T1, T2>)
     where
+        O: PartialEq + Debug + Display,
         P: Fn(&str) -> ParseResult<I>,
-        T1: Fn(&I) -> Result<i32>,
-        T2: Fn(&I) -> Result<i32>,
+        T1: Fn(&I) -> Result<O>,
+        T2: Fn(&I) -> Result<O>,
 {
     let input_string = read_to_string(solution.day);
 
