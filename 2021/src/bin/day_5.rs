@@ -33,13 +33,13 @@ impl Line {
             current.y += step_y;
         }
 
-        points.push(current.clone());
+        points.push(current);
 
         points
     }
 
     fn is_diagonal(&self) -> bool {
-        return self.p1.x != self.p2.x && self.p1.y != self.p2.y;
+        self.p1.x != self.p2.x && self.p1.y != self.p2.y
     }
 }
 

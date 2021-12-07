@@ -54,7 +54,7 @@ impl Board {
             }
         }
 
-        return false;
+        false
     }
 
     fn score(&self, last_drawn_number: i32) -> i32 {
@@ -76,7 +76,7 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
     use nom::multi::{many0, many1, separated_list1};
     use nom::sequence::{preceded, terminated, tuple};
 
-    let drawn_numbers = map(terminated(separated_list1(char(','), i32), newline), |n| Array1::from_vec(n));
+    let drawn_numbers = map(terminated(separated_list1(char(','), i32), newline), Array1::from_vec);
 
     let single_board_number = preceded(many0(char(' ')), i32);
 
@@ -112,7 +112,7 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
     let mut boards: Vec<Board> = input.boards.clone();
 
     for &drawn_number in &input.drawn_numbers {
-        assert!(boards.len() > 0);
+        assert!(!boards.is_empty());
 
         let is_last_board = boards.len() == 1;
         for board in &mut boards {

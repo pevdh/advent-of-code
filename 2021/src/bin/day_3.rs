@@ -7,16 +7,10 @@ fn parse(raw_input: &str) -> Result<Array2<u8>> {
 
     let mut array = Array::zeros((rows, columns));
 
-    let mut i = 0;
-    for row in raw_input.lines() {
-        let mut j = 0;
-        for ch in row.chars() {
+    for (i, row) in raw_input.lines().enumerate() {
+        for (j, ch) in row.chars().enumerate() {
             array[[i, j]] = if ch == '1' { 1u8 } else { 0u8 };
-
-            j += 1;
         }
-
-        i += 1;
     }
 
     Ok(array)
@@ -40,10 +34,8 @@ fn count_zeros_and_ones<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> (i32, i32) 
 fn binary_to_u32<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> u32
     where <I as IntoIterator>::IntoIter: DoubleEndedIterator {
     let mut result: u32 = 0;
-    let mut i = 0;
-    for &el in v.into_iter().rev() {
+    for (i, &el) in v.into_iter().rev().enumerate() {
         result |= (el as u32 & 1u32) << i;
-        i += 1;
     }
 
     result
