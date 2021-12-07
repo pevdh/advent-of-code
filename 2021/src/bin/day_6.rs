@@ -1,7 +1,7 @@
 use aoc2021::*;
 
 fn parse(raw_input: &str) -> Result<Vec<i32>> {
-    Ok(raw_input.split(",").map(|s| s.parse().unwrap()).collect())
+    Ok(raw_input.split(',').map(|s| s.parse().unwrap()).collect())
 }
 
 fn simulate_lanternfish_growth_rate(starting_ages: &[i32], days: i32) -> i64 {

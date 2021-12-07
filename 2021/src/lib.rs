@@ -10,7 +10,7 @@ use nom::error::{convert_error, VerboseError};
 pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
 
 pub fn nom_parse<'a, O>(input: &'a str, mut parser: impl FnMut(&'a str) -> IResult<&'a str, O, VerboseError<&'a str>>) -> Result<O> {
-    let nom_parse_result = parser(&input);
+    let nom_parse_result = parser(input);
 
     nom_parse_result
         .map(|(_i, o)| o)
