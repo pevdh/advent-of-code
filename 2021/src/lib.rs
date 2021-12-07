@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 pub use std::collections::{
     HashMap,
     HashSet
@@ -37,14 +38,17 @@ pub struct AdventOfCodeSolution<
     pub expected_2: Task2Output,
 }
 
-pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(solution: AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn>)
+pub fn run<Parser, ParserOutput, Task1Input, Task1Output, Task1Fn, Task2Input, Task2Output, Task2Fn>(solution: AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn>)
     -> Result<()>
     where
         Parser: Fn(&str) -> Result<ParserOutput>,
+        ParserOutput: Borrow<Task1Input> + Borrow<Task2Input>,
+        Task1Input: ?Sized,
         Task1Output: PartialEq + Debug + Display,
-        Task1Fn: Fn(&ParserOutput) -> Result<Task1Output>,
+        Task1Fn: Fn(&Task1Input) -> Result<Task1Output>,
+        Task2Input: ?Sized,
         Task2Output: PartialEq + Debug + Display,
-        Task2Fn: Fn(&ParserOutput) -> Result<Task2Output>,
+        Task2Fn: Fn(&Task2Input) -> Result<Task2Output>,
 {
     let input_file_path = format!("input/day_{}.txt", solution.day);
     let input_string = std::fs::read_to_string(&input_file_path)
@@ -56,7 +60,7 @@ pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(sol
     let parsed_input = (solution.parser)(&input_string)
         .with_context(|| format!("Error while parsing input from \"{}\"", &input_file_path))?;
 
-    let task1_test_output = (solution.task_1)(&parsed_test_input)
+    let task1_test_output = (solution.task_1)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 1 on test input")?;
 
     if task1_test_output == solution.expected_1 {
@@ -65,11 +69,11 @@ pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(sol
         print!("[TEST FAILED] ");
     }
 
-    let task1_output = (solution.task_1)(&parsed_input)
+    let task1_output = (solution.task_1)(parsed_input.borrow())
         .with_context(|| "Error while running task 1 on input")?;
     println!("Task 1: {}", task1_output);
 
-    let task2_test_output = (solution.task_2)(&parsed_test_input)
+    let task2_test_output = (solution.task_2)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 2 on test input")?;
 
     if task2_test_output == solution.expected_2 {
@@ -78,7 +82,7 @@ pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(sol
         print!("[TEST FAILED] ");
     }
 
-    let task2_output = (solution.task_2)(&parsed_input)
+    let task2_output = (solution.task_2)(parsed_input.borrow())
         .with_context(|| "While running task 2 on input")?;
     println!("Task 2: {}", task2_output);
 
