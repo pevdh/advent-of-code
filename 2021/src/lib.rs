@@ -3,7 +3,7 @@ pub use std::collections::{
     HashSet
 };
 use std::fmt::{Debug, Display};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use nom::{IResult, Err};
 use nom::error::{convert_error, VerboseError};
 
@@ -15,9 +15,9 @@ pub fn nom_parse<'a, O>(input: &'a str, mut parser: impl FnMut(&'a str) -> IResu
     nom_parse_result
         .map(|(_i, o)| o)
         .map_err(|e| match e {
-            Err::Error(e) => anyhow!("{}", convert_error(input, e)),
-            Err::Incomplete(_e) => anyhow!("Parser error: incomplete input"),
-            Err::Failure(_e) => anyhow!("Parser error: failure"),
+            Err::Error(e) => anyhow!("Parse errors:\n{}", convert_error(input, e)),
+            Err::Incomplete(_e) => anyhow!("Parse error: incomplete input"),
+            Err::Failure(_e) => anyhow!("Parse error: failure"),
         })
 }
 
@@ -38,6 +38,7 @@ pub struct AdventOfCodeSolution<
 }
 
 pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(solution: AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn>)
+    -> Result<()>
     where
         Parser: Fn(&str) -> Result<ParserOutput>,
         Task1Output: PartialEq + Debug + Display,
@@ -45,33 +46,18 @@ pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(sol
         Task2Output: PartialEq + Debug + Display,
         Task2Fn: Fn(&ParserOutput) -> Result<Task2Output>,
 {
-    let input_string = read_to_string(solution.day);
+    let input_file_path = format!("input/day_{}.txt", solution.day);
+    let input_string = std::fs::read_to_string(&input_file_path)
+        .with_context(|| format!("Error while reading input from \"{}\"", &input_file_path))?;
 
-    let parsed_test_input = match (solution.parser)(solution.test_input) {
-        Ok(parsed_test_input) => parsed_test_input,
-        Err(e) => {
-            eprintln!(
-                "Errors occurred while parsing test input:\n{}",
-                e,
-            );
-            return;
-        }
-    };
+    let parsed_test_input = (solution.parser)(solution.test_input)
+        .with_context(|| "Error while parsing test input")?;
 
-    let parsed_input = match (solution.parser)(input_string.as_str()) {
-        Ok(i) => i,
-        Err(e) => {
-            eprintln!(
-                "Errors occurred while parsing input from inputs/day_{}.txt:\n{}",
-                solution.day,
-                e,
-            );
-            return;
-        }
-    };
+    let parsed_input = (solution.parser)(&input_string)
+        .with_context(|| format!("Error while parsing input from \"{}\"", &input_file_path))?;
 
     let task1_test_output = (solution.task_1)(&parsed_test_input)
-        .expect("Error while running task 1 on test input");
+        .with_context(|| "Error while running task 1 on test input")?;
 
     if task1_test_output == solution.expected_1 {
         print!("[TEST OK] ");
@@ -80,11 +66,11 @@ pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(sol
     }
 
     let task1_output = (solution.task_1)(&parsed_input)
-        .expect("Error while running task 1 on input");
-    println!("Task 1: {}\n", task1_output);
+        .with_context(|| "Error while running task 1 on input")?;
+    println!("Task 1: {}", task1_output);
 
     let task2_test_output = (solution.task_2)(&parsed_test_input)
-        .expect("Error while running task 2 on test input");
+        .with_context(|| "Error while running task 2 on test input")?;
 
     if task2_test_output == solution.expected_2 {
         print!("[TEST OK] ");
@@ -93,22 +79,22 @@ pub fn run<Parser, ParserOutput, Task1Output, Task1Fn, Task2Output, Task2Fn>(sol
     }
 
     let task2_output = (solution.task_2)(&parsed_input)
-        .expect("Error while running task 2 on input");
+        .with_context(|| "While running task 2 on input")?;
     println!("Task 2: {}", task2_output);
-}
 
-pub fn read_to_string(day: u32) -> String
-{
-    let path = format!("input/day_{}.txt", day);
-
-    return std::fs::read_to_string(path).unwrap()
+    Ok(())
 }
 
 #[macro_export]
 macro_rules! aoc_main {
     ($($tt:tt)*) => {
         fn main() {
-            run(AdventOfCodeSolution { $($tt)* });
+            match run(AdventOfCodeSolution { $($tt)* }) {
+                Err(e) => {
+                    eprintln!("{:?}", e);
+                },
+                _ => {},
+            }
         }
     }
 }
