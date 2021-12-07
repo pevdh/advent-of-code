@@ -24,13 +24,13 @@ fn simulate_lanternfish_growth_rate(starting_ages: &[i32], days: i32) -> i64 {
     ages.iter().sum()
 }
 
-fn task_1(ages: &Vec<i32>) -> Result<i64> {
+fn task_1(ages: &[i32]) -> Result<i64> {
     let num_fish = simulate_lanternfish_growth_rate(ages, 80);
 
     Ok(num_fish)
 }
 
-fn task_2(ages: &Vec<i32>) -> Result<i64> {
+fn task_2(ages: &[i32]) -> Result<i64> {
     let num_fish = simulate_lanternfish_growth_rate(ages, 256);
 
     Ok(num_fish)
