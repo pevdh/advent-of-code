@@ -1,11 +1,7 @@
 use ndarray::{Array, Array2, Axis};
 use aoc2021::*;
 
-struct ParsedInput {
-    numbers: Array2<u8>,
-}
-
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(raw_input: &str) -> Result<Array2<u8>> {
     let rows = raw_input.lines().count();
     let columns = raw_input.lines().next().unwrap().len();
 
@@ -23,7 +19,7 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
         i += 1;
     }
 
-    Ok(("", ParsedInput { numbers: array }))
+    Ok(array)
 }
 
 fn count_zeros_and_ones<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> (i32, i32) {
@@ -53,9 +49,9 @@ fn binary_to_u32<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> u32
     result
 }
 
-fn task_1(input: &ParsedInput) -> Result<i32> {
+fn task_1(numbers: &Array2<u8>) -> Result<i32> {
     // Most common number (0 or 1) in each column
-    let most_common_numbers: Vec<u8> = input.numbers.columns().into_iter()
+    let most_common_numbers: Vec<u8> = numbers.columns().into_iter()
         .map(|column| {
             let (zeros, ones) = count_zeros_and_ones(&column);
             if zeros > ones { 0u8 } else { 1u8 }
@@ -65,7 +61,7 @@ fn task_1(input: &ParsedInput) -> Result<i32> {
     let gamma: u32 = binary_to_u32(&most_common_numbers);
 
     // Least common number (0 or 1) in each column
-    let least_common_numbers: Vec<u8> = input.numbers.columns().into_iter()
+    let least_common_numbers: Vec<u8> = numbers.columns().into_iter()
         .map(|column| {
             let (zeros, ones) = count_zeros_and_ones(&column);
             if zeros < ones { 0u8 } else { 1u8 }
@@ -77,9 +73,9 @@ fn task_1(input: &ParsedInput) -> Result<i32> {
     Ok((gamma * epsilon) as i32)
 }
 
-fn task_2(input: &ParsedInput) -> Result<i32> {
+fn task_2(numbers: &Array2<u8>) -> Result<i32> {
     // Find oxygen generator rating
-    let mut candidates: Array2<u8> = input.numbers.clone();
+    let mut candidates: Array2<u8> = numbers.clone();
     let mut position: usize = 0;
     let oxygen_generator_rating = loop {
         let column = candidates.column(position);
@@ -107,7 +103,7 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
     };
 
     // Find CO2 scrubber rating
-    let mut candidates: Array2<u8> = input.numbers.clone();
+    let mut candidates: Array2<u8> = numbers.clone();
     let mut position: usize = 0;
     let co2_scrubber_rating = loop {
         let column = candidates.column(position);

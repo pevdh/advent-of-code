@@ -4,7 +4,7 @@ use aoc2021::*;
 struct ParsedInput {
 }
 
-fn parse(_raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(_raw_input: &str) -> Result<ParsedInput> {
     todo!()
 }
 

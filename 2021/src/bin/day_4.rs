@@ -1,7 +1,7 @@
 use ndarray::{Array1, Array2};
 use aoc2021::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ParsedInput {
     drawn_numbers: Array1<i32>,
     boards: Vec<Board>,
@@ -70,7 +70,7 @@ impl Board {
     }
 }
 
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(raw_input: &str) -> Result<ParsedInput> {
     use nom::character::complete::{char, i32, newline};
     use nom::combinator::{all_consuming, map, opt};
     use nom::multi::{many0, many1, separated_list1};
@@ -85,11 +85,11 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
 
     let file = all_consuming(tuple((terminated(drawn_numbers, newline), separated_list1(newline, board))));
 
-    let mut parse = map(file, |(drawn_numbers, boards)| {
+    let parser = map(file, |(drawn_numbers, boards)| {
         ParsedInput { drawn_numbers, boards }
     });
 
-    parse(raw_input)
+    nom_parse(raw_input, parser)
 }
 
 fn task_1(input: &ParsedInput) -> Result<i32> {
