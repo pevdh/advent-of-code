@@ -4,7 +4,7 @@ struct ParsedInput {
     depths: Vec<i32>,
 }
 
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(raw_input: &str) -> Result<ParsedInput> {
     use nom::character::complete::i32;
     use nom::character::complete::newline;
     use nom::multi::separated_list0;
@@ -13,9 +13,9 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
 
     let line = i32;
     let file = separated_list0(newline, line);
-    let mut parse = all_consuming(map(file, |depths| ParsedInput { depths }));
+    let parser = all_consuming(map(file, |depths| ParsedInput { depths }));
 
-    parse(raw_input)
+    nom_parse(raw_input, parser)
 }
 
 fn count_increased(input: &ParsedInput) -> Result<i32> {

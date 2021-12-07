@@ -43,7 +43,7 @@ impl Line {
     }
 }
 
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(raw_input: &str) -> Result<ParsedInput> {
     use nom::bytes::complete::tag;
     use nom::character::complete::{char, i32, newline};
     use nom::combinator::{all_consuming, map};
@@ -54,9 +54,9 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
     let point2 = map(separated_pair(i32, char(','), i32), |(x, y)| Point { x, y });
     let line = map(separated_pair(point1, tag(" -> "), point2), |(p1, p2)| Line { p1, p2 });
     let file = map(separated_list0(newline, line), |lines| ParsedInput { lines });
-    let mut parse = all_consuming(file);
+    let parser = all_consuming(file);
 
-    parse(raw_input)
+    nom_parse(raw_input, parser)
 }
 
 fn task_1(input: &ParsedInput) -> Result<i32> {

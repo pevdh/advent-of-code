@@ -10,7 +10,7 @@ struct ParsedInput {
     commands: Vec<Command>,
 }
 
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
+fn parse(raw_input: &str) -> Result<ParsedInput> {
     use nom::character::complete::i32;
     use nom::bytes::complete::tag;
     use nom::combinator::map;
@@ -28,9 +28,9 @@ fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
     let line = alt((forward, up, down));
     let file = separated_list0(newline, line);
 
-    let mut parse = all_consuming(map(file, |commands| ParsedInput { commands }));
+    let parser = all_consuming(map(file, |commands| ParsedInput { commands }));
 
-    parse(raw_input)
+    nom_parse(raw_input, parser)
 }
 
 fn task_1(input: &ParsedInput) -> Result<i32> {

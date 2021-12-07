@@ -1,14 +1,7 @@
 use aoc2021::*;
 
-#[derive(Debug)]
-struct ParsedInput {
-    ages: Vec<i32>,
-}
-
-fn parse(raw_input: &str) -> ParseResult<ParsedInput> {
-    Ok(("", ParsedInput {
-        ages: raw_input.split(",").map(|s| s.parse().unwrap()).collect()
-    }))
+fn parse(raw_input: &str) -> Result<Vec<i32>> {
+    Ok(raw_input.split(",").map(|s| s.parse().unwrap()).collect())
 }
 
 fn simulate_lanternfish_growth_rate(starting_ages: &[i32], days: i32) -> i64 {
@@ -31,14 +24,14 @@ fn simulate_lanternfish_growth_rate(starting_ages: &[i32], days: i32) -> i64 {
     ages.iter().sum()
 }
 
-fn task_1(input: &ParsedInput) -> Result<i64> {
-    let num_fish = simulate_lanternfish_growth_rate(&input.ages, 80);
+fn task_1(ages: &Vec<i32>) -> Result<i64> {
+    let num_fish = simulate_lanternfish_growth_rate(ages, 80);
 
     Ok(num_fish)
 }
 
-fn task_2(input: &ParsedInput) -> Result<i64> {
-    let num_fish = simulate_lanternfish_growth_rate(&input.ages, 256);
+fn task_2(ages: &Vec<i32>) -> Result<i64> {
+    let num_fish = simulate_lanternfish_growth_rate(ages, 256);
 
     Ok(num_fish)
 }
