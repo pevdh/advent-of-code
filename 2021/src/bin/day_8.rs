@@ -1,7 +1,6 @@
 use aoc2021::*;
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use itertools::Itertools;
-use nom::combinator::map;
 
 aoc_main!(
     day: 8,
@@ -84,19 +83,18 @@ fn task_2(entries: &[NoteEntry]) -> Result<i64> {
             .ok_or(anyhow!("Unable to find eight"))?;
 
         let a = seven.iter().copied()
-            .filter(|&c| !one.iter().any(|&a| a == c))
-            .next()
+            .find(|&c| !one.iter().any(|&a| a == c))
             .ok_or(anyhow!("Unable to find \"a\" position"))?;
 
         mapping.insert(a, 'a');
 
         let is_six = |s: &[char]| {
             // Six is the pattern of length 6 that only overlaps one segment with a one
-            s.len() == 6 && overlap(s, &one) == 1
+            s.len() == 6 && overlap(s, one) == 1
         };
 
         let six = signal_patterns.iter()
-            .find(|s| is_six(&s))
+            .find(|s| is_six(s))
             .ok_or(anyhow!("Unable to find six"))?;
 
         // The segment that overlaps in the six and one is f, the segment that does not overlap is c
@@ -115,14 +113,14 @@ fn task_2(entries: &[NoteEntry]) -> Result<i64> {
         let is_zero = |s: &[char]| {
             // Zero is the pattern of length 6 that overlaps with digit 8 for 6 segments
             // and with digit 4 for 3 segments and it's not the six
-            s.len() == 6 && overlap(&eight, s) == 6 && overlap(s, &four) == 3 && s != &six[..]
+            s.len() == 6 && overlap(eight, s) == 6 && overlap(s, four) == 3 && s != &six[..]
         };
 
         let zero = signal_patterns.iter()
-            .find(|s| is_zero(&s))
+            .find(|s| is_zero(s))
             .ok_or(anyhow!("Unable to find zero"))?;
 
-        let d = difference(&eight, &zero)
+        let d = difference(eight, zero)
             .first()
             .copied()
             .ok_or(anyhow!("Unable to find d"))?;
@@ -132,31 +130,29 @@ fn task_2(entries: &[NoteEntry]) -> Result<i64> {
         let is_nine = |s: &[char]| {
             // Nine is the pattern of length 6 that overlaps with digit 8 for 6 segments
             // and with digit 4 for 4 segments and it's not the six
-            s.len() == 6 && overlap(&eight, s) == 6 && overlap(s, &four) == 4 && s != &six[..]
+            s.len() == 6 && overlap(eight, s) == 6 && overlap(s, four) == 4 && s != &six[..]
         };
 
         let nine = signal_patterns.iter()
-            .find(|s| is_nine(&s))
+            .find(|s| is_nine(s))
             .ok_or(anyhow!("Unable to find nine"))?;
 
-        let e = difference(&eight, &nine)
+        let e = difference(eight, nine)
             .first()
             .copied()
             .ok_or(anyhow!("Unable to find e"))?;
         mapping.insert(e, 'e');
 
         // b is the one segment where zero and four overlap, that we haven't mapped yet
-        let b = intersection(&zero, &four).iter()
-            .filter(|c| !mapping.keys().contains(c))
-            .next()
+        let b = intersection(zero, four).iter()
+            .find(|c| !mapping.keys().contains(c))
             .copied()
             .ok_or(anyhow!("Unable to find b"))?;
         mapping.insert(b, 'b');
 
         // The left over segment is g
         let g = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].iter()
-            .filter(|c| !mapping.keys().contains(c))
-            .next()
+            .find(|c| !mapping.keys().contains(c))
             .copied()
             .ok_or(anyhow!("Unable to find g"))?;
         mapping.insert(g, 'g');
@@ -169,7 +165,7 @@ fn task_2(entries: &[NoteEntry]) -> Result<i64> {
 
             let digit = segments_to_digit(&mapped_output_signal)? as i64;
 
-            added_output_values += digit * 10i64.pow(((entry.output_value.len() - i - 1) as u32));
+            added_output_values += digit * 10i64.pow((entry.output_value.len() - i - 1) as u32);
         }
     }
 
@@ -204,5 +200,5 @@ const DIGITS: [&str; 10] = [
 fn segments_to_digit(signals: &[char]) -> Result<usize> {
     let signals: String = signals.iter().collect();
     DIGITS.iter().position(|s| s == &signals)
-        .ok_or(anyhow!("Cannot map \"{}\" to a digit because it is invalid", signals))
+        .ok_or_else(|| anyhow!("Cannot map \"{}\" to a digit because it is invalid", signals))
 }
