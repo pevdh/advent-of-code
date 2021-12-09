@@ -1,8 +1,4 @@
-use anyhow::anyhow;
 use aoc2021::*;
-use itertools::Itertools;
-use ndarray::Array2;
-use std::collections::VecDeque;
 
 aoc_main!(
     day: 9,
@@ -74,14 +70,14 @@ fn low_points(heightmap: &Array2<u32>) -> impl Iterator<Item = (usize, usize)> +
 fn neighbors(a: &Array2<u32>, pos: (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
     let row = pos.0 as i32;
     let col = pos.1 as i32;
-    let mut v = vec![
+    let mut v = smallvec![
         (row - 1, col),
         (row, col + 1),
         (row + 1, col),
         (row, col - 1),
     ];
 
-    v.retain(|&(neighbor_row, neighbor_col)| {
+    v.retain(|&mut (neighbor_row, neighbor_col)| {
         neighbor_row >= 0
             && neighbor_col >= 0
             && neighbor_row < a.nrows() as i32
