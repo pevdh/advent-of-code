@@ -66,7 +66,8 @@ pub fn run<Parser, ParserOutput, Task1Input, Task1Output, Task1Fn, Task2Input, T
     if task1_test_output == solution.expected_1 {
         print!("[TEST OK] ");
     } else {
-        print!("[TEST FAILED] ");
+        print!("[TEST FAILED ");
+        print!("Expected: {} Got: {}] ", solution.expected_1, task1_test_output);
     }
 
     let task1_output = (solution.task_1)(parsed_input.borrow())
@@ -79,7 +80,8 @@ pub fn run<Parser, ParserOutput, Task1Input, Task1Output, Task1Fn, Task2Input, T
     if task2_test_output == solution.expected_2 {
         print!("[TEST OK] ");
     } else {
-        print!("[TEST FAILED] ");
+        print!("[TEST FAILED ");
+        print!("Expected: {} Got: {}] ", solution.expected_2, task2_test_output);
     }
 
     let task2_output = (solution.task_2)(parsed_input.borrow())
