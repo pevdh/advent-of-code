@@ -13,3 +13,4 @@ num-traits = "0.2.14"
 ndarray = "0.15.4"
 streaming-stats = "0.2.3"
 itertools = "0.10.3"
+smallvec = { version = "1.7.0", features=["const_new"] }

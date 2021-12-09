@@ -1,12 +1,19 @@
 use std::borrow::Borrow;
-pub use std::collections::{
-    HashMap,
-    HashSet
-};
 use std::fmt::{Debug, Display};
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use nom::{IResult, Err};
 use nom::error::{convert_error, VerboseError};
+
+pub use anyhow::anyhow;
+pub use itertools::Itertools;
+pub use ndarray::{Array2, ArrayView2};
+pub use smallvec::smallvec_inline as smallvec;
+pub use smallvec::SmallVec;
+pub use std::collections::{
+    HashMap,
+    HashSet,
+    VecDeque,
+};
 
 pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
 
