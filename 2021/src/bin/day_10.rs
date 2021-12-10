@@ -1,4 +1,5 @@
 use aoc2021::*;
+use std::iter::FromIterator;
 
 aoc_main!(
     day: 10,
@@ -23,102 +24,74 @@ fn parse(raw_input: &str) -> Result<String> {
     Ok(raw_input.to_string())
 }
 
-fn task_1(inp: &str) -> Result<i64> {
-    fn score_line(inp: &str) -> Option<i64> {
-        let mut st = VecDeque::new();
+enum SyntaxError {
+    IllegalCharacter(char),
+    Incomplete(Vec<char>),
+}
 
-        for ch in inp.chars() {
-            match ch {
-                '['|'<'|'{'|'(' => {
-                    st.push_front(ch);
-                },
-                ']'|'>'|'}'|')' => {
-                    let t = st.pop_front();
+fn find_syntax_error(line: &str) -> SyntaxError {
+    let delimiters: HashMap<char, char> =
+        HashMap::from_iter([('(', ')'), ('[', ']'), ('{', '}'), ('<', '>')]);
 
-                    return match (t, ch) {
-                        (Some('('), ')') => continue,
-                        (Some(_), ')') => Some(3),
-                        (Some('['), ']') => continue,
-                        (Some(_), ']') => Some(57),
-                        (Some('{'), '}') => continue,
-                        (Some(_), '}') => Some(1197),
-                        (Some('<'), '>') => continue,
-                        (Some(_), '>') => Some(25137),
-                        _ => continue,
-                    };
-                },
-                _ => unreachable!(),
+    let mut stack = Vec::new();
+    for ch in line.chars() {
+        let stack_top = stack.last();
+        match (stack_top, ch) {
+            (_, '[' | '<' | '{' | '(') => {
+                stack.push(*delimiters.get(&ch).unwrap());
             }
-        }
+            (Some(&expected_closing_delimiter), ']' | '>' | '}' | ')') => {
+                if expected_closing_delimiter != ch {
+                    return SyntaxError::IllegalCharacter(ch);
+                }
 
-        None
+                stack.pop();
+            }
+            _ => return SyntaxError::IllegalCharacter(ch),
+        }
     }
 
-    let mut total = 0;
-    for line in inp.lines() {
-        if let Some(sc) = score_line(line) {
-            total += sc;
-        }
-    }
+    SyntaxError::Incomplete(stack.into_iter().rev().collect())
+}
 
-    Ok(total)
+fn task_1(inp: &str) -> Result<i64> {
+    let score = inp
+        .lines()
+        .map(|line| match find_syntax_error(line) {
+            SyntaxError::IllegalCharacter(')') => 3,
+            SyntaxError::IllegalCharacter(']') => 57,
+            SyntaxError::IllegalCharacter('}') => 1197,
+            SyntaxError::IllegalCharacter('>') => 25137,
+            _ => 0,
+        })
+        .sum();
+
+    Ok(score)
 }
 
 fn task_2(input: &str) -> Result<i64> {
-    fn score_line(inp: &str) -> Option<i64> {
-        let mut st = VecDeque::new();
-
-        for ch in inp.chars() {
-            match ch {
-                '['|'<'|'{'|'(' => {
-                    st.push_front(match ch {
-                        '(' => ')',
-                        '[' => ']',
-                        '{' => '}',
-                        '<' => '>',
+    let scores: Vec<i64> = input
+        .lines()
+        .filter_map(|line| match find_syntax_error(line) {
+            SyntaxError::Incomplete(missing_chars) => {
+                let line_score = missing_chars.into_iter().fold(0, |acc, ch| {
+                    let char_score = match ch {
+                        ')' => 1,
+                        ']' => 2,
+                        '}' => 3,
+                        '>' => 4,
                         _ => unreachable!(),
-                    });
-                },
-                ']'|'>'|'}'|')' => {
-                    let t = st.pop_front();
+                    };
 
-                    if let Some(t_c) = t {
-                        if t_c == ch {
-                            continue;
-                        } else {
-                            return None;
-                        }
-                    }
-                },
-                _ => unreachable!(),
+                    acc * 5 + char_score
+                });
+
+                Some(line_score)
             }
-        }
-
-        if !st.is_empty() {
-            let mut sc = 0;
-
-            for &ch in st.iter() {
-                sc *= 5;
-                sc += match ch {
-                    ')' => 1,
-                    ']' => 2,
-                    '}' => 3,
-                    '>' => 4,
-                    _ => unreachable!(),
-                };
-            }
-
-            return Some(sc)
-        }
-
-        None
-    }
-
-    let sc: Vec<i64> = input.lines().map(score_line)
-        .flatten()
+            _ => None,
+        })
         .sorted()
         .collect();
 
-    Ok(sc[sc.len() / 2])
+    Ok(scores[scores.len() / 2])
 }
-
