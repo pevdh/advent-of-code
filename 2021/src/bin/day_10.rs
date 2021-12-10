@@ -29,7 +29,7 @@ enum SyntaxError {
     Incomplete(Vec<char>),
 }
 
-fn find_syntax_error(line: &str) -> SyntaxError {
+fn find_syntax_error(line: &str) -> Option<SyntaxError> {
     let delimiters: HashMap<char, char> =
         HashMap::from_iter([('(', ')'), ('[', ']'), ('{', '}'), ('<', '>')]);
 
@@ -42,26 +42,30 @@ fn find_syntax_error(line: &str) -> SyntaxError {
             }
             (Some(&expected_closing_delimiter), ']' | '>' | '}' | ')') => {
                 if expected_closing_delimiter != ch {
-                    return SyntaxError::IllegalCharacter(ch);
+                    return Some(SyntaxError::IllegalCharacter(ch));
                 }
 
                 stack.pop();
             }
-            _ => return SyntaxError::IllegalCharacter(ch),
+            _ => return Some(SyntaxError::IllegalCharacter(ch)),
         }
     }
 
-    SyntaxError::Incomplete(stack.into_iter().rev().collect())
+    if stack.is_empty() {
+        None
+    } else {
+        Some(SyntaxError::Incomplete(stack.into_iter().rev().collect()))
+    }
 }
 
 fn task_1(inp: &str) -> Result<i64> {
     let score = inp
         .lines()
         .map(|line| match find_syntax_error(line) {
-            SyntaxError::IllegalCharacter(')') => 3,
-            SyntaxError::IllegalCharacter(']') => 57,
-            SyntaxError::IllegalCharacter('}') => 1197,
-            SyntaxError::IllegalCharacter('>') => 25137,
+            Some(SyntaxError::IllegalCharacter(')')) => 3,
+            Some(SyntaxError::IllegalCharacter(']')) => 57,
+            Some(SyntaxError::IllegalCharacter('}')) => 1197,
+            Some(SyntaxError::IllegalCharacter('>')) => 25137,
             _ => 0,
         })
         .sum();
@@ -73,7 +77,7 @@ fn task_2(input: &str) -> Result<i64> {
     let scores: Vec<i64> = input
         .lines()
         .filter_map(|line| match find_syntax_error(line) {
-            SyntaxError::Incomplete(missing_chars) => {
+            Some(SyntaxError::Incomplete(missing_chars)) => {
                 let line_score = missing_chars.into_iter().fold(0, |acc, ch| {
                     let char_score = match ch {
                         ')' => 1,
