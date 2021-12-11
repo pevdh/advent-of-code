@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+use std::iter::FromIterator;
 use aoc2021::*;
 
 aoc_main!(
@@ -41,12 +43,26 @@ fn parse(raw_input: &str) -> Result<Array2<u32>> {
 
 fn task_1(energy_levels: &Array2<u32>) -> Result<i32> {
     let mut energy_levels = energy_levels.clone();
+
     let mut total_flashes = 0;
-    for i in 0..100 {
+    for _ in 0..100 {
         total_flashes += simulate_step(&mut energy_levels);
     }
 
     Ok(total_flashes)
+}
+
+fn task_2(energy_levels: &Array2<u32>) -> Result<i32> {
+    let mut energy_levels = energy_levels.clone();
+    for i in 0.. {
+        let flashes = simulate_step(&mut energy_levels);
+
+        if flashes as usize == energy_levels.len() {
+            return Ok(i + 1);
+        }
+    }
+
+    unreachable!()
 }
 
 fn simulate_step(energy_levels: &mut Array2<u32>) -> i32 {
@@ -54,35 +70,27 @@ fn simulate_step(energy_levels: &mut Array2<u32>) -> i32 {
         .for_each(|e| *e += 1);
 
     let mut flashes = 0;
-    let mut pos_flashed = HashSet::new();
-    loop {
-        let to_flash: Vec<(usize, usize)> = energy_levels.indexed_iter()
-            .filter(|(_, &val)| {
-                val > 9
-            })
-            .map(|(pos, _)| pos)
-            .collect();
+    let mut pos_flashed = Array2::zeros((energy_levels.nrows(), energy_levels.ncols()));
+    let mut to_visit: BTreeSet<(usize, usize)> = BTreeSet::from_iter(energy_levels
+        .indexed_iter()
+        .filter(|(_, &val)| val > 9)
+        .map(|(pos, _)| pos));
 
-        if to_flash.is_empty() {
-            break;
-        }
+    while let Some(current) = to_visit.iter().next().cloned() {
+        to_visit.remove(&current);
 
-        for to_flash_pos in to_flash {
-            if pos_flashed.contains(&to_flash_pos) {
-                continue;
-            }
+        flashes += 1;
+        energy_levels[current] = 0;
+        pos_flashed[current] = 1;
 
-            flashes += 1;
-            energy_levels[to_flash_pos] = 0;
-            pos_flashed.insert(to_flash_pos);
+        let adjacent = neighbors(energy_levels, current)
+            .filter(|&neighbor_pos| pos_flashed[neighbor_pos] == 0);
 
-            let adjacent = neighbors(energy_levels, to_flash_pos);
-            for adjacent_pos in adjacent {
-                if pos_flashed.contains(&adjacent_pos) {
-                    continue;
-                }
+        for neighbor_pos in adjacent {
+            energy_levels[neighbor_pos] += 1;
 
-                energy_levels[adjacent_pos] += 1;
+            if energy_levels[neighbor_pos] > 9 {
+                to_visit.insert(neighbor_pos);
             }
         }
     }
@@ -114,17 +122,3 @@ fn neighbors(a: &Array2<u32>, pos: (usize, usize)) -> impl Iterator<Item = (usiz
     v.into_iter()
         .map(|(pos_i, pos_j)| (pos_i as usize, pos_j as usize))
 }
-
-fn task_2(energy_levels: &Array2<u32>) -> Result<i32> {
-    let mut energy_levels = energy_levels.clone();
-    for i in 0.. {
-        let flashes = simulate_step(&mut energy_levels);
-
-        if flashes as usize == energy_levels.len() {
-            return Ok(i + 1);
-        }
-    }
-
-    unreachable!()
-}
-
