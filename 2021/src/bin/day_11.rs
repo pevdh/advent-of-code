@@ -1,6 +1,6 @@
+use aoc2021::*;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
-use aoc2021::*;
 
 aoc_main!(
     day: 11,
@@ -66,15 +66,16 @@ fn task_2(energy_levels: &Array2<u32>) -> Result<i32> {
 }
 
 fn simulate_step(energy_levels: &mut Array2<u32>) -> i32 {
-    energy_levels.iter_mut()
-        .for_each(|e| *e += 1);
+    energy_levels.iter_mut().for_each(|e| *e += 1);
 
     let mut flashes = 0;
     let mut pos_flashed = Array2::zeros((energy_levels.nrows(), energy_levels.ncols()));
-    let mut to_visit: BTreeSet<(usize, usize)> = BTreeSet::from_iter(energy_levels
-        .indexed_iter()
-        .filter(|(_, &val)| val > 9)
-        .map(|(pos, _)| pos));
+    let mut to_visit: BTreeSet<(usize, usize)> = BTreeSet::from_iter(
+        energy_levels
+            .indexed_iter()
+            .filter(|(_, &val)| val > 9)
+            .map(|(pos, _)| pos),
+    );
 
     while let Some(current) = to_visit.iter().next().cloned() {
         to_visit.remove(&current);

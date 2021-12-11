@@ -1,8 +1,7 @@
 use aoc2021::*;
 
 #[derive(Default, Debug, PartialEq)]
-struct ParsedInput {
-}
+struct ParsedInput {}
 
 fn parse(_raw_input: &str) -> Result<ParsedInput> {
     todo!()

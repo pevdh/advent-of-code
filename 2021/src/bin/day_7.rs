@@ -1,17 +1,21 @@
+use anyhow::{anyhow, Context};
 use aoc2021::*;
 use std::cmp;
-use anyhow::{anyhow, Context};
 
 fn parse(raw_input: &str) -> Result<Vec<i32>> {
     raw_input
         .split(',')
-        .map(|s| s.parse().with_context(|| format!("Failed to parse number in input: {}", s)))
+        .map(|s| {
+            s.parse()
+                .with_context(|| format!("Failed to parse number in input: {}", s))
+        })
         .collect()
 }
 
 fn task_1(positions: &[i32]) -> Result<i64> {
     fn calculate_fuel_consumption(target_position: i32, positions: &[i32]) -> i32 {
-        positions.iter()
+        positions
+            .iter()
             .map(|pos| (target_position - pos).abs())
             .sum()
     }
@@ -21,7 +25,7 @@ fn task_1(positions: &[i32]) -> Result<i64> {
 
     let fuel_consumption = cmp::min(
         calculate_fuel_consumption(target_position.floor() as i32, positions),
-        calculate_fuel_consumption(target_position.ceil() as i32, positions)
+        calculate_fuel_consumption(target_position.ceil() as i32, positions),
     );
 
     Ok(fuel_consumption as i64)
@@ -29,7 +33,8 @@ fn task_1(positions: &[i32]) -> Result<i64> {
 
 fn task_2(positions: &[i32]) -> Result<i64> {
     fn calculate_fuel_consumption(target_position: i32, positions: &[i32]) -> i32 {
-        positions.iter()
+        positions
+            .iter()
             .map(|pos| {
                 let difference = (target_position - pos).abs();
                 (1..=difference).sum::<i32>()
@@ -41,7 +46,7 @@ fn task_2(positions: &[i32]) -> Result<i64> {
 
     let fuel_consumption = cmp::min(
         calculate_fuel_consumption(target_position.floor() as i32, positions),
-        calculate_fuel_consumption(target_position.ceil() as i32, positions)
+        calculate_fuel_consumption(target_position.ceil() as i32, positions),
     );
 
     Ok(fuel_consumption as i64)
