@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::fmt::{Debug, Display};
+use std::time::Instant;
 use anyhow::Context;
 use nom::{IResult, Err};
 use nom::error::{convert_error, VerboseError};
@@ -77,9 +78,10 @@ pub fn run<Parser, ParserOutput, Task1Input, Task1Output, Task1Fn, Task2Input, T
         print!("Expected: {} Got: {}] ", solution.expected_1, task1_test_output);
     }
 
+    let task1_start = Instant::now();
     let task1_output = (solution.task_1)(parsed_input.borrow())
         .with_context(|| "Error while running task 1 on input")?;
-    println!("Task 1: {}", task1_output);
+    println!("Task 1: {} ({:?})", task1_output, task1_start.elapsed());
 
     let task2_test_output = (solution.task_2)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 2 on test input")?;
@@ -91,9 +93,10 @@ pub fn run<Parser, ParserOutput, Task1Input, Task1Output, Task1Fn, Task2Input, T
         print!("Expected: {} Got: {}] ", solution.expected_2, task2_test_output);
     }
 
+    let task2_start = Instant::now();
     let task2_output = (solution.task_2)(parsed_input.borrow())
         .with_context(|| "While running task 2 on input")?;
-    println!("Task 2: {}", task2_output);
+    println!("Task 2: {} ({:?})", task2_output, task2_start.elapsed());
 
     Ok(())
 }
