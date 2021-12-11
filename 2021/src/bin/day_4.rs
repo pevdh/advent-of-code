@@ -1,5 +1,5 @@
-use ndarray::{Array1, Array2};
 use aoc2021::*;
+use ndarray::{Array1, Array2};
 
 #[derive(Debug, Clone)]
 struct ParsedInput {
@@ -43,7 +43,7 @@ impl Board {
 
     fn wins(&self) -> bool {
         for column in self.marked.columns() {
-            if column.sum() == column.len() as i32{
+            if column.sum() == column.len() as i32 {
                 return true;
             }
         }
@@ -76,17 +76,24 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
     use nom::multi::{many0, many1, separated_list1};
     use nom::sequence::{preceded, terminated, tuple};
 
-    let drawn_numbers = map(terminated(separated_list1(char(','), i32), newline), Array1::from_vec);
+    let drawn_numbers = map(
+        terminated(separated_list1(char(','), i32), newline),
+        Array1::from_vec,
+    );
 
     let single_board_number = preceded(many0(char(' ')), i32);
 
     let board_row = terminated(many1(single_board_number), opt(newline));
     let board = map(many1(board_row), Board::from_2d_vecs);
 
-    let file = all_consuming(tuple((terminated(drawn_numbers, newline), separated_list1(newline, board))));
+    let file = all_consuming(tuple((
+        terminated(drawn_numbers, newline),
+        separated_list1(newline, board),
+    )));
 
-    let parser = map(file, |(drawn_numbers, boards)| {
-        ParsedInput { drawn_numbers, boards }
+    let parser = map(file, |(drawn_numbers, boards)| ParsedInput {
+        drawn_numbers,
+        boards,
     });
 
     nom_parse(raw_input, parser)

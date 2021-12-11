@@ -21,7 +21,7 @@ impl Line {
     pub fn points(&self) -> Vec<Point> {
         let (x1, x2) = (self.p1.x, self.p2.x);
         let (y1, y2) = (self.p1.y, self.p2.y);
-        
+
         let mut points = vec![];
         let mut current = Point { x: x1, y: y1 };
         let step_x = (x2 - x1).signum();
@@ -52,8 +52,12 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
 
     let point1 = map(separated_pair(i32, char(','), i32), |(x, y)| Point { x, y });
     let point2 = map(separated_pair(i32, char(','), i32), |(x, y)| Point { x, y });
-    let line = map(separated_pair(point1, tag(" -> "), point2), |(p1, p2)| Line { p1, p2 });
-    let file = map(separated_list0(newline, line), |lines| ParsedInput { lines });
+    let line = map(separated_pair(point1, tag(" -> "), point2), |(p1, p2)| {
+        Line { p1, p2 }
+    });
+    let file = map(separated_list0(newline, line), |lines| ParsedInput {
+        lines,
+    });
     let parser = all_consuming(file);
 
     nom_parse(raw_input, parser)
@@ -73,9 +77,8 @@ fn task_1(input: &ParsedInput) -> Result<i32> {
         }
     }
 
-    let num_points_with_at_least_two_lines = counts.into_iter()
-        .filter(|(_p, count)| *count >= 2)
-        .count();
+    let num_points_with_at_least_two_lines =
+        counts.into_iter().filter(|(_p, count)| *count >= 2).count();
 
     Ok(num_points_with_at_least_two_lines as i32)
 }
@@ -90,9 +93,8 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
         }
     }
 
-    let num_points_with_at_least_two_lines = counts.into_iter()
-        .filter(|(_p, count)| *count >= 2)
-        .count();
+    let num_points_with_at_least_two_lines =
+        counts.into_iter().filter(|(_p, count)| *count >= 2).count();
 
     Ok(num_points_with_at_least_two_lines as i32)
 }

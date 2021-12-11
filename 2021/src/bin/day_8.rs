@@ -1,5 +1,5 @@
-use aoc2021::*;
 use anyhow::anyhow;
+use aoc2021::*;
 use itertools::Itertools;
 
 aoc_main!(
@@ -38,10 +38,13 @@ fn parse(raw_input: &str) -> Result<Vec<NoteEntry>> {
     let unique_signal_patterns = separated_list1(char(' '), signal_pattern);
     let output_value = separated_list1(char(' '), signal_pattern);
 
-    let entry = map(separated_pair(unique_signal_patterns, tag(" | "), output_value), |(p, v)| NoteEntry {
-        unique_signal_patterns: p,
-        output_value: v,
-    });
+    let entry = map(
+        separated_pair(unique_signal_patterns, tag(" | "), output_value),
+        |(p, v)| NoteEntry {
+            unique_signal_patterns: p,
+            output_value: v,
+        },
+    );
 
     let entries = all_consuming(separated_list1(line_ending, entry));
 
@@ -49,13 +52,14 @@ fn parse(raw_input: &str) -> Result<Vec<NoteEntry>> {
 }
 
 fn task_1(entries: &[NoteEntry]) -> Result<i32> {
-    let count = entries.iter()
+    let count = entries
+        .iter()
         .flat_map(|e| e.output_value.iter())
         .filter(|output_value| {
             output_value.len() == DIGITS[1].len()
-            || output_value.len() == DIGITS[4].len()
-            || output_value.len() == DIGITS[7].len()
-            || output_value.len() == DIGITS[8].len()
+                || output_value.len() == DIGITS[4].len()
+                || output_value.len() == DIGITS[7].len()
+                || output_value.len() == DIGITS[8].len()
         })
         .count();
 
@@ -74,24 +78,33 @@ fn task_2(entries: &[NoteEntry]) -> Result<i64> {
 
 #[allow(clippy::many_single_char_names)]
 fn smart_decode(entry: &NoteEntry) -> Result<i32> {
-
     let signal_patterns = &entry.unique_signal_patterns;
 
     let mut mapping: HashMap<char, char> = HashMap::new();
 
-    let one = signal_patterns.iter().find(|s| s.len() == DIGITS[1].len())
+    let one = signal_patterns
+        .iter()
+        .find(|s| s.len() == DIGITS[1].len())
         .ok_or(anyhow!("Unable to find one"))?;
 
-    let four = signal_patterns.iter().find(|s| s.len() == DIGITS[4].len())
+    let four = signal_patterns
+        .iter()
+        .find(|s| s.len() == DIGITS[4].len())
         .ok_or(anyhow!("Unable to find four"))?;
 
-    let seven = signal_patterns.iter().find(|s| s.len() == DIGITS[7].len())
+    let seven = signal_patterns
+        .iter()
+        .find(|s| s.len() == DIGITS[7].len())
         .ok_or(anyhow!("Unable to find seven"))?;
 
-    let eight = signal_patterns.iter().find(|s| s.len() == DIGITS[8].len())
+    let eight = signal_patterns
+        .iter()
+        .find(|s| s.len() == DIGITS[8].len())
         .ok_or(anyhow!("Unable to find eight"))?;
 
-    let a = seven.iter().copied()
+    let a = seven
+        .iter()
+        .copied()
         .find(|&c| !one.iter().any(|&a| a == c))
         .ok_or(anyhow!("Unable to find \"a\" position"))?;
 
@@ -102,7 +115,8 @@ fn smart_decode(entry: &NoteEntry) -> Result<i32> {
         s.len() == 6 && overlap(s, one) == 1
     };
 
-    let six = signal_patterns.iter()
+    let six = signal_patterns
+        .iter()
         .find(|s| is_six(s))
         .ok_or(anyhow!("Unable to find six"))?;
 
@@ -125,7 +139,8 @@ fn smart_decode(entry: &NoteEntry) -> Result<i32> {
         s.len() == 6 && overlap(eight, s) == 6 && overlap(s, four) == 3 && s != &six[..]
     };
 
-    let zero = signal_patterns.iter()
+    let zero = signal_patterns
+        .iter()
         .find(|s| is_zero(s))
         .ok_or(anyhow!("Unable to find zero"))?;
 
@@ -142,7 +157,8 @@ fn smart_decode(entry: &NoteEntry) -> Result<i32> {
         s.len() == 6 && overlap(eight, s) == 6 && overlap(s, four) == 4 && s != &six[..]
     };
 
-    let nine = signal_patterns.iter()
+    let nine = signal_patterns
+        .iter()
         .find(|s| is_nine(s))
         .ok_or(anyhow!("Unable to find nine"))?;
 
@@ -153,14 +169,16 @@ fn smart_decode(entry: &NoteEntry) -> Result<i32> {
     mapping.insert(e, 'e');
 
     // b is the one segment where zero and four overlap, that we haven't mapped yet
-    let b = intersection(zero, four).iter()
+    let b = intersection(zero, four)
+        .iter()
         .find(|c| !mapping.keys().contains(c))
         .copied()
         .ok_or(anyhow!("Unable to find b"))?;
     mapping.insert(b, 'b');
 
     // The left over segment is g
-    let g = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].iter()
+    let g = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        .iter()
         .find(|c| !mapping.keys().contains(c))
         .copied()
         .ok_or(anyhow!("Unable to find g"))?;
@@ -168,7 +186,8 @@ fn smart_decode(entry: &NoteEntry) -> Result<i32> {
 
     let mut value = 0;
     for (i, output_signal) in entry.output_value.iter().enumerate() {
-        let mut mapped_output_signal: Vec<char> = output_signal.iter()
+        let mut mapped_output_signal: Vec<char> = output_signal
+            .iter()
             .map(|c| mapping.get(c).copied().unwrap())
             .collect();
         mapped_output_signal.sort_unstable();
@@ -185,15 +204,11 @@ fn bruteforce_decode(entry: &NoteEntry) -> Result<i32> {
     let chars = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
 
     'outer: for perm in chars.iter().permutations(chars.len()) {
-        let mapping: HashMap<char, char> = perm.into_iter()
-            .copied()
-            .zip(chars)
-            .collect();
+        let mapping: HashMap<char, char> = perm.into_iter().copied().zip(chars).collect();
 
         for signal in &entry.unique_signal_patterns {
-            let mut mapped_segment: Vec<char> = signal.iter()
-                .map(|c| *mapping.get(c).unwrap())
-                .collect();
+            let mut mapped_segment: Vec<char> =
+                signal.iter().map(|c| *mapping.get(c).unwrap()).collect();
 
             mapped_segment.sort_unstable();
 
@@ -204,7 +219,8 @@ fn bruteforce_decode(entry: &NoteEntry) -> Result<i32> {
 
         let mut value = 0;
         for (i, output_segment) in entry.output_value.iter().enumerate() {
-            let mut mapped_segment: Vec<char> = output_segment.iter()
+            let mut mapped_segment: Vec<char> = output_segment
+                .iter()
                 .map(|c| *mapping.get(c).unwrap())
                 .collect();
 
@@ -253,6 +269,10 @@ const DIGITS: [&str; 10] = [
 
 fn segments_to_digit(signals: &[char]) -> Result<usize> {
     let signals: String = signals.iter().collect();
-    DIGITS.iter().position(|s| s == &signals)
-        .ok_or_else(|| anyhow!("Cannot map \"{}\" to a digit because it is invalid", signals))
+    DIGITS.iter().position(|s| s == &signals).ok_or_else(|| {
+        anyhow!(
+            "Cannot map \"{}\" to a digit because it is invalid",
+            signals
+        )
+    })
 }
