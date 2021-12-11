@@ -47,6 +47,8 @@ pub fn run<
     Task2Output,
     Task2Fn,
 >(
+    input_file_path: &str,
+    input: &str,
     solution: AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn>,
 ) -> Result<()>
 where
@@ -59,15 +61,11 @@ where
     Task2Output: PartialEq + Debug + Display,
     Task2Fn: Fn(&Task2Input) -> Result<Task2Output>,
 {
-    let input_file_path = format!("input/day_{}.txt", solution.day);
-    let input_string = std::fs::read_to_string(&input_file_path)
-        .with_context(|| format!("Error while reading input from \"{}\"", &input_file_path))?;
-
     let parsed_test_input =
         (solution.parser)(solution.test_input).with_context(|| "Error while parsing test input")?;
 
-    let parsed_input = (solution.parser)(&input_string)
-        .with_context(|| format!("Error while parsing input from \"{}\"", &input_file_path))?;
+    let parsed_input = (solution.parser)(input)
+        .with_context(|| format!("Error while parsing input (input originated from \"{}\")", input_file_path))?;
 
     let task1_test_output = (solution.task_1)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 1 on test input")?;
@@ -108,9 +106,11 @@ where
 
 #[macro_export]
 macro_rules! aoc_main {
-    ($($tt:tt)*) => {
+    (day: $day:expr, $($tt:tt)*) => {
         fn main() {
-            match run(AdventOfCodeSolution { $($tt)* }) {
+            let input_file_path: &str = concat!("../../input/day_", stringify!($day), ".txt");
+            let input: &str = include_str!(concat!("../../input/day_", stringify!($day), ".txt"));
+            match run(input_file_path, input, AdventOfCodeSolution { day: $day, $($tt)* }) {
                 Err(e) => {
                     eprintln!("{:?}", e);
                 },
