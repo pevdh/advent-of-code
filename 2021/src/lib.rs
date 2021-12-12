@@ -64,8 +64,12 @@ where
     let parsed_test_input =
         (solution.parser)(solution.test_input).with_context(|| "Error while parsing test input")?;
 
-    let parsed_input = (solution.parser)(input)
-        .with_context(|| format!("Error while parsing input (input originated from \"{}\")", input_file_path))?;
+    let parsed_input = (solution.parser)(input).with_context(|| {
+        format!(
+            "Error while parsing input (input originated from \"{}\")",
+            input_file_path
+        )
+    })?;
 
     let task1_test_output = (solution.task_1)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 1 on test input")?;
