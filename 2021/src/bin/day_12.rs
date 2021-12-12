@@ -39,7 +39,7 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
     let mut node_to_idx: HashMap<String, NodeIndex> = HashMap::new();
 
     for line in raw_input.lines() {
-        let mut parts = line.split("-");
+        let mut parts = line.split('-');
         let a = parts.next().ok_or(anyhow!("Invalid input"))?;
         let b = parts.next().ok_or(anyhow!("Invalid input"))?;
 
@@ -68,7 +68,7 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
     }
 
     for line in raw_input.lines() {
-        let mut parts = line.split("-");
+        let mut parts = line.split('-');
         let a = parts.next().ok_or(anyhow!("Invalid input"))?;
         let b = parts.next().ok_or(anyhow!("Invalid input"))?;
 
@@ -86,177 +86,193 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
 }
 
 fn task_1(input: &ParsedInput) -> Result<u32> {
-    let mut graph = input.graph.clone();
-    let num_paths = find_paths(&mut graph, input.start);
+    let graph = input.graph.clone();
+    let num_paths = find_num_paths::<Task1GraphWalker>(&graph, input.start);
 
     Ok(num_paths)
 }
 
 fn task_2(input: &ParsedInput) -> Result<u32> {
-    let mut graph = input.graph.clone();
-    let num_paths = find_paths_visit_one_small_cave_twice(&mut graph, input.start);
+    let graph = input.graph.clone();
+    let num_paths = find_num_paths::<Task2GraphWalker>(&graph, input.start);
 
     Ok(num_paths)
 }
 
-type GraphPath = Vec<NodeIndex>;
+trait GraphWalker<'graph> {
+    type State;
 
-fn find_paths(graph: &mut Graph<Cave>, from: NodeIndex) -> u32 {
-    let mut num_paths = 0;
-
-    let mut incomplete_paths: Vec<GraphPath> = vec![vec![from]];
-
-    let mut completed_paths: Vec<usize> = vec![];
-    let mut new_paths: Vec<GraphPath> = vec![];
-
-    while !incomplete_paths.is_empty() {
-        completed_paths.clear();
-        new_paths.clear();
-
-        for (path_idx, path) in incomplete_paths.iter_mut().enumerate() {
-            // Check if this path is completed
-            if let Some(&Cave::End) = graph.node(*path.last().unwrap()) {
-                // println!("Found path (total={})", num_paths);
-                // print_path(graph, path);
-                num_paths += 1;
-                completed_paths.push(path_idx);
-                continue;
-            }
-
-            // Advance this path by 1
-            let last_node_idx = *path.last().unwrap();
-            let eligible_adjacent_nodes: Vec<NodeIndex> = graph.nodes_adjacent_to(last_node_idx).iter()
-                .filter(|&node_idx| {
-                    let already_visited = path.contains(node_idx);
-
-                    match (already_visited, graph.node(*node_idx).unwrap()) {
-                        (_, Cave::Big { .. }) | (false, Cave::End) | (false, Cave::Small { .. }) => true,
-                        _ => false,
-                    }
-                })
-                .copied()
-                .collect();
-
-            if eligible_adjacent_nodes.len() == 0 {
-                // Unable to advance this path any further - remove
-                completed_paths.push(path_idx);
-                continue;
-            }
-
-            // Branch off into new directions
-            for &eligible_adjacent_node in eligible_adjacent_nodes.iter().skip(1) {
-                let mut new_path = path.clone();
-                new_path.push(eligible_adjacent_node);
-
-                new_paths.push(new_path);
-            }
-
-            path.push(eligible_adjacent_nodes[0]);
-        }
-
-        incomplete_paths = incomplete_paths.into_iter()
-            .enumerate()
-            .filter(|(idx, _)| !completed_paths.contains(idx))
-            .map(|(_, p)| p)
-            .collect();
-        incomplete_paths.extend(new_paths.iter().cloned());
-    }
-
-    num_paths
+    fn init_at_start(graph: &'graph Graph<Cave>, start: NodeIndex) -> Self::State;
+    fn advance(state: Self::State) -> Vec<Self::State>;
+    fn is_at_end(state: &Self::State) -> bool;
 }
 
-fn find_paths_visit_one_small_cave_twice(graph: &mut Graph<Cave>, from: NodeIndex) -> u32 {
-    let mut num_paths = 0;
-
-    let mut incomplete_paths: Vec<GraphPath> = vec![vec![from]];
-
-    let mut completed_paths: Vec<usize> = vec![];
-    let mut new_paths: Vec<GraphPath> = vec![];
-
-    while !incomplete_paths.is_empty() {
-        completed_paths.clear();
-        new_paths.clear();
-
-        for (path_idx, path) in incomplete_paths.iter_mut().enumerate() {
-            // Check if this path is completed
-            if let Some(&Cave::End) = graph.node(*path.last().unwrap()) {
-                num_paths += 1;
-                completed_paths.push(path_idx);
-                continue;
-            }
-
-            // Advance this path by 1
-            let last_node_idx = *path.last().unwrap();
-            let eligible_adjacent_nodes: Vec<NodeIndex> = graph.nodes_adjacent_to(last_node_idx).iter()
-                .filter(|&node_idx| {
-                    let already_visited = path.contains(node_idx);
-
-                    let mut small_caves_count = HashMap::new();
-                    let mut small_cave_visited_twice = false;
-                    for &n in path.iter() {
-                        if let Cave::Small { .. } = graph.node(n).unwrap() {
-                            let entry = small_caves_count.entry(n).or_insert(0);
-                            *entry += 1;
-
-                            if *entry == 2 {
-                                small_cave_visited_twice = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    match (graph.node(*node_idx).unwrap(), already_visited, small_cave_visited_twice) {
-                        (Cave::Big { .. }, _, _, ) | (Cave::End, false, _) | (Cave::Small { .. }, false, _) | (Cave::Small { .. }, true, false) => true,
-                        _ => false,
-                    }
-                })
-                .copied()
-                .collect();
-
-            if eligible_adjacent_nodes.len() == 0 {
-                // Unable to advance this path any further - remove
-                completed_paths.push(path_idx);
-                continue;
-            }
-
-            // Branch off into new directions
-            for &eligible_adjacent_node in eligible_adjacent_nodes.iter().skip(1) {
-                let mut new_path = path.clone();
-                new_path.push(eligible_adjacent_node);
-
-                new_paths.push(new_path);
-            }
-
-            path.push(eligible_adjacent_nodes[0]);
-        }
-
-        incomplete_paths = incomplete_paths.into_iter()
-            .enumerate()
-            .filter(|(idx, _)| !completed_paths.contains(idx))
-            .map(|(_, p)| p)
-            .collect();
-        incomplete_paths.extend(new_paths.iter().cloned());
-    }
-
-    num_paths
+#[derive(Clone)]
+struct Task1GraphWalkerState<'graph> {
+    graph: &'graph Graph<Cave>,
+    visited_small_caves: HashSet<NodeIndex>,
+    current_position: NodeIndex,
 }
 
+struct Task1GraphWalker {}
 
-fn print_path(graph: &Graph<Cave>, path: &[NodeIndex]) {
-    for &n in path {
-        let d = graph.node(n).unwrap();
+impl<'graph> GraphWalker<'graph> for Task1GraphWalker {
+    type State = Task1GraphWalkerState<'graph>;
 
-        match d {
-            Cave::Start => print!(" start "),
-            Cave::End => print!(" end "),
-            Cave::Big { name } => print!(" {} ", name),
-            Cave::Small { name } => print!(" {} ", name),
+    fn init_at_start(
+        graph: &'graph Graph<Cave>,
+        start: NodeIndex,
+    ) -> Task1GraphWalkerState<'graph> {
+        Task1GraphWalkerState {
+            graph,
+            visited_small_caves: HashSet::new(),
+            current_position: start,
         }
-
-        print!("->");
     }
 
-    println!();
+    fn advance(state: Task1GraphWalkerState<'graph>) -> Vec<Task1GraphWalkerState<'graph>> {
+        let eligible_adjacent_nodes: Vec<NodeIndex> = state
+            .graph
+            .nodes_adjacent_to(state.current_position)
+            .iter()
+            .filter(|&node_idx| {
+                let already_visited = state.visited_small_caves.contains(node_idx);
+
+                matches!(
+                    (state.graph.node(*node_idx), already_visited),
+                    (Cave::Big { .. }, _) | (Cave::Small { .. }, false) | (Cave::End, _)
+                )
+            })
+            .copied()
+            .collect();
+
+        let mut next_paths = vec![];
+        for &eligible_adjacent_node in &eligible_adjacent_nodes {
+            let mut visited_small_caves = state.visited_small_caves.clone();
+            if let Cave::Small { .. } = state.graph.node(eligible_adjacent_node) {
+                visited_small_caves.insert(eligible_adjacent_node);
+            }
+
+            next_paths.push(Task1GraphWalkerState {
+                graph: state.graph,
+                visited_small_caves,
+                current_position: eligible_adjacent_node,
+            });
+        }
+
+        next_paths
+    }
+
+    fn is_at_end(state: &Task1GraphWalkerState) -> bool {
+        *state.graph.node(state.current_position) == Cave::End
+    }
+}
+
+#[derive(Clone)]
+struct Task2GraphWalkerState<'graph> {
+    graph: &'graph Graph<Cave>,
+    visited_small_cave_count: HashMap<NodeIndex, u32>,
+    small_cave_has_been_visited_twice: bool,
+    current_position: NodeIndex,
+}
+
+struct Task2GraphWalker {}
+
+impl<'graph> GraphWalker<'graph> for Task2GraphWalker {
+    type State = Task2GraphWalkerState<'graph>;
+
+    fn init_at_start(graph: &'graph Graph<Cave>, start: NodeIndex) -> Self::State {
+        Self::State {
+            graph,
+            visited_small_cave_count: HashMap::new(),
+            small_cave_has_been_visited_twice: false,
+            current_position: start,
+        }
+    }
+
+    fn advance(state: Self::State) -> Vec<Self::State> {
+        let eligible_adjacent_nodes: Vec<NodeIndex> = state
+            .graph
+            .nodes_adjacent_to(state.current_position)
+            .iter()
+            .filter(|&node_idx| {
+                let already_visited_small_cave =
+                    state.visited_small_cave_count.contains_key(node_idx);
+
+                matches!(
+                    (
+                        state.graph.node(*node_idx),
+                        already_visited_small_cave,
+                        state.small_cave_has_been_visited_twice
+                    ),
+                    (Cave::Big { .. }, _, _)
+                        | (Cave::Small { .. }, false, _)
+                        | (Cave::Small { .. }, true, false)
+                        | (Cave::End, _, _)
+                )
+            })
+            .copied()
+            .collect();
+
+        let mut next_paths = vec![];
+        for &eligible_adjacent_node in &eligible_adjacent_nodes {
+            let mut visited_small_cave_count = state.visited_small_cave_count.clone();
+            let mut small_cave_has_been_visited_twice = state.small_cave_has_been_visited_twice;
+
+            if let Cave::Small { .. } = state.graph.node(eligible_adjacent_node) {
+                let entry = visited_small_cave_count
+                    .entry(eligible_adjacent_node)
+                    .or_insert(0);
+                *entry += 1;
+
+                if *entry == 2 {
+                    small_cave_has_been_visited_twice = true;
+                }
+            }
+
+            next_paths.push(Self::State {
+                visited_small_cave_count,
+                small_cave_has_been_visited_twice,
+                graph: state.graph,
+                current_position: eligible_adjacent_node,
+            });
+        }
+
+        next_paths
+    }
+
+    fn is_at_end(state: &Self::State) -> bool {
+        *state.graph.node(state.current_position) == Cave::End
+    }
+}
+
+fn find_num_paths<'graph, Walker: GraphWalker<'graph>>(
+    graph: &'graph Graph<Cave>,
+    start: NodeIndex,
+) -> u32 {
+    let mut num_paths = 0;
+
+    let mut states: Vec<Walker::State> = vec![Walker::init_at_start(graph, start)];
+
+    loop {
+        let mut new_states = vec![];
+
+        for state in states.into_iter() {
+            for new_state in Walker::advance(state) {
+                if Walker::is_at_end(&new_state) {
+                    num_paths += 1;
+                } else {
+                    new_states.push(new_state);
+                }
+            }
+        }
+
+        if new_states.is_empty() {
+            return num_paths;
+        }
+
+        states = new_states;
+    }
 }
 
 type NodeIndex = usize;
@@ -285,7 +301,7 @@ impl<N> Graph<N> {
         self.nodes.push(Node { data });
         self.edges.push(Vec::new());
 
-        return idx;
+        idx
     }
 
     fn add_edge(&mut self, a: NodeIndex, b: NodeIndex) {
@@ -293,18 +309,11 @@ impl<N> Graph<N> {
         self.edges[b].push(a);
     }
 
-    fn node(&self, idx: NodeIndex) -> Option<&N> {
-        self.nodes.get(idx).map(|n| &n.data)
-    }
-
-    fn node_mut(&mut self, idx: NodeIndex) -> Option<&mut N> {
-        self.nodes.get_mut(idx).map(|n| &mut n.data)
+    fn node(&self, idx: NodeIndex) -> &N {
+        &self.nodes[idx].data
     }
 
     fn nodes_adjacent_to(&self, idx: NodeIndex) -> &[NodeIndex] {
         &self.edges[idx]
     }
 }
-
-
-
