@@ -1,5 +1,5 @@
 use aoc2021::*;
-use ndarray::{s, ArrayViewMut2};
+use std::iter::FromIterator;
 use nom::sequence::{preceded, separated_pair};
 
 aoc_main!(
@@ -77,94 +77,66 @@ fn parse(raw_input: &str) -> Result<ParsedInput> {
 }
 
 fn task_1(input: &ParsedInput) -> Result<usize> {
-    let mut grid = create_grid_from_dots(&input.dots);
+    let mut dots = HashSet::from_iter(input.dots.iter().copied());
     let instruction = input.fold_instructions.first().unwrap();
 
-    fold(grid.view_mut(), instruction);
+    fold(&mut dots, instruction);
 
-    let visible_dots = grid.iter().filter(|&v| *v > 0).count();
-
-    Ok(visible_dots)
+    Ok(dots.len())
 }
 
 fn task_2(input: &ParsedInput) -> Result<u8> {
-    let mut grid = create_grid_from_dots(&input.dots);
-    let mut dim = (grid.nrows(), grid.ncols());
+    let mut dots = HashSet::from_iter(input.dots.iter().copied());
 
     for instruction in &input.fold_instructions {
-        dim = fold(grid.slice_mut(s![..(dim.0), ..(dim.1)]), instruction);
+        fold(&mut dots, instruction);
     }
 
     println!();
-    print_grid(&grid, &dim);
+    print_grid(&dots);
 
     Ok(0)
 }
 
-fn create_grid_from_dots(dots: &[(usize, usize)]) -> Array2<u32> {
-    let max_x = *dots.iter().map(|(x, _)| x).max().unwrap();
-    let max_y = *dots.iter().map(|(_, y)| y).max().unwrap();
 
-    let mut grid = Array2::zeros((max_y + 1, max_x + 1));
-
-    for &(x, y) in dots {
-        grid[[y, x]] += 1;
-    }
-
-    grid
-}
-
-fn fold(grid: ArrayViewMut2<u32>, instruction: &FoldInstruction) -> (usize, usize) {
+fn fold(dots: &mut HashSet<(usize, usize)>, instruction: &FoldInstruction) {
     match instruction {
-        FoldInstruction::Up { y } => fold_up(grid, *y),
-        FoldInstruction::Left { x } => fold_left(grid, *x),
+        FoldInstruction::Up { y } => fold_up(dots, *y),
+        FoldInstruction::Left { x } => fold_left(dots, *x),
     }
 }
 
-fn fold_up(mut grid: ArrayViewMut2<u32>, fold_y: usize) -> (usize, usize) {
-    let new_values: Vec<((usize, usize), u32)> = grid
-        .indexed_iter_mut()
-        .filter(|((row, _col), value)| *row > fold_y && **value > 0)
-        .map(|((row, col), value)| ((fold_y - (row - fold_y), col), value))
-        .map(|((row, col), value)| {
-            let new_value = ((row, col), *value);
-            *value = 0;
-
-            new_value
-        })
+fn fold_up(dots: &mut HashSet<(usize, usize)>, fold_y: usize) {
+    let translated_dots: Vec<((usize, usize), (usize, usize))> = dots.iter()
+        .filter(|&(_, y)| *y > fold_y)
+        .map(|(x, y)| ((*x, *y), (*x, fold_y - (*y - fold_y))))
         .collect();
 
-    for (pos, value) in new_values {
-        grid[pos] += value;
+    for (old_dot, new_dot) in translated_dots {
+        dots.remove(&old_dot);
+        dots.insert(new_dot);
     }
-
-    (fold_y, grid.ncols())
 }
 
-fn fold_left(mut grid: ArrayViewMut2<u32>, fold_x: usize) -> (usize, usize) {
-    let new_values: Vec<((usize, usize), u32)> = grid
-        .indexed_iter_mut()
-        .filter(|((_row, col), value)| *col > fold_x && **value > 0)
-        .map(|((row, col), value)| ((row, fold_x - (col - fold_x)), value))
-        .map(|((row, col), value)| {
-            let new_value = ((row, col), *value);
-            *value = 0;
-
-            new_value
-        })
+fn fold_left(dots: &mut HashSet<(usize, usize)>, fold_x: usize) {
+    let translated_dots: Vec<((usize, usize), (usize, usize))> = dots.iter()
+        .filter(|&(x, _)| *x > fold_x)
+        .map(|(x, y)| ((*x, *y), (fold_x - (*x - fold_x), *y)))
         .collect();
 
-    for (pos, value) in new_values {
-        grid[pos] += value;
+    for (old_dot, new_dot) in translated_dots {
+        dots.remove(&old_dot);
+        dots.insert(new_dot);
     }
-
-    (grid.nrows(), fold_x)
 }
 
-fn print_grid(grid: &Array2<u32>, dim: &(usize, usize)) {
-    for y in 0..dim.0 {
-        for x in 0..dim.1 {
-            if grid[[y, x]] > 0 {
+fn print_grid(dots: &HashSet<(usize, usize)>) {
+    let max_y = *dots.iter().map(|(_, y)| y).max().unwrap();
+    let max_x = *dots.iter().map(|(x, _)| x).max().unwrap();
+
+    for y in 0..(max_y + 1) {
+        for x in 0..(max_x + 1) {
+            if dots.contains(&(x, y)) {
                 print!("#");
             } else {
                 print!(" ");
