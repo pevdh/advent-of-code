@@ -110,20 +110,14 @@ struct Polymer {
 
 impl Polymer {
     fn from_template(polymer_template: &[char]) -> Self {
-        let mut pair_counts = HashMap::new();
-        let mut element_counts = HashMap::new();
-
-        for &c in polymer_template {
-            *element_counts.entry(c).or_insert(0) += 1;
-        }
-
-        for (&a, &b) in polymer_template.iter().zip(polymer_template.iter().skip(1)) {
-            *pair_counts.entry((a, b)).or_insert(0) += 1;
-        }
+        let pairs = polymer_template
+            .iter()
+            .copied()
+            .zip(polymer_template.iter().copied().skip(1));
 
         Polymer {
-            element_counts,
-            pair_counts,
+            element_counts: polymer_template.iter().copied().frequencies(),
+            pair_counts: pairs.frequencies(),
         }
     }
 
