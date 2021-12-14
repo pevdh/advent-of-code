@@ -1,8 +1,10 @@
 use anyhow::Context;
 use nom::error::{convert_error, VerboseError};
 use nom::{Err, IResult};
+use num_traits::PrimInt;
 use std::borrow::Borrow;
 use std::fmt::{Debug, Display};
+use std::hash::Hash;
 use std::time::Instant;
 
 pub use anyhow::anyhow;
@@ -123,3 +125,20 @@ macro_rules! aoc_main {
         }
     }
 }
+
+pub trait Frequencies<FreqType: PrimInt>: Iterator {
+    fn frequencies(self) -> HashMap<Self::Item, FreqType>
+    where
+        Self: Sized,
+        Self::Item: Eq + Hash,
+    {
+        let mut counts = HashMap::new();
+        self.for_each(|item| {
+            let entry = counts.entry(item).or_insert_with(FreqType::zero);
+            *entry = entry.add(FreqType::one());
+        });
+        counts
+    }
+}
+
+impl<It: ?Sized, FreqType: PrimInt> Frequencies<FreqType> for It where It: Iterator {}
