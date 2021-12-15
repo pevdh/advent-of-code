@@ -1,6 +1,7 @@
 use aoc2021::*;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use std::hash::Hash;
 
 aoc_main!(
     day: 15,
@@ -41,51 +42,66 @@ fn parse(raw_input: &str) -> Result<Array2<u32>> {
     Ok(Array2::from_shape_vec((rows, cols), data?)?)
 }
 
-type Position = (usize, usize);
-
-fn task_1(cave: &Array2<u32>) -> Result<u32> {
+fn task_1(cave_risk_map: &Array2<u32>) -> Result<u32> {
     let start = (0, 0);
-    let end = (cave.nrows() - 1, cave.ncols() - 1);
-    let risk = dijkstra(cave, start, end);
+    let end = (cave_risk_map.nrows() - 1, cave_risk_map.ncols() - 1);
 
-    Ok(risk)
+    let neighbor_fn = |pos| cave_risk_map.von_neumann_neighborhood(&pos);
+    let weight_fn = |pos| cave_risk_map[pos];
+
+    let risk = dijkstra(start, end, neighbor_fn, weight_fn);
+
+    risk.ok_or_else(|| anyhow!("Unable to find path from {:?} to {:?}", start, end))
 }
 
-fn task_2(cave: &Array2<u32>) -> Result<u32> {
-    let full_map = generate_full_map(cave);
+fn task_2(cave_risk_map: &Array2<u32>) -> Result<u32> {
+    let full_cave_risk_map = generate_full_map(cave_risk_map);
 
     let start = (0, 0);
-    let end = (full_map.nrows() - 1, full_map.ncols() - 1);
-    let risk = dijkstra(&full_map, start, end);
+    let end = (
+        full_cave_risk_map.nrows() - 1,
+        full_cave_risk_map.ncols() - 1,
+    );
 
-    Ok(risk)
+    let neighbor_fn = |pos| full_cave_risk_map.von_neumann_neighborhood(&pos);
+    let weight_fn = |pos| full_cave_risk_map[pos];
+
+    let total_risk = dijkstra(start, end, neighbor_fn, weight_fn);
+
+    total_risk.ok_or_else(|| anyhow!("Unable to find path from {:?} to {:?}", start, end))
 }
 
-fn dijkstra(cave: &Array2<u32>, start: Position, end: Position) -> u32 {
-    assert!(cave.nrows() > 1 && cave.ncols() > 1);
-
+fn dijkstra<T, NeighborFn, NeighborFnRet, WeightFn>(
+    start: T,
+    end: T,
+    neighbor_fn: NeighborFn,
+    weight_fn: WeightFn,
+) -> Option<u32>
+where
+    T: Ord + Hash + PartialEq + Eq + Copy,
+    NeighborFn: Fn(T) -> NeighborFnRet,
+    NeighborFnRet: Iterator<Item = T>,
+    WeightFn: Fn(T) -> u32,
+{
     let mut unvisited_nodes = BinaryHeap::new();
-
-    let positions = (0..cave.nrows()).cartesian_product(0..cave.ncols());
-    let mut distances: HashMap<Position, u32> =
-        HashMap::from_iter(positions.map(|pos| (pos, u32::MAX)));
+    let mut weights = HashMap::new();
 
     unvisited_nodes.push(Reverse((0, start)));
-    distances.insert(start, 0);
+    weights.insert(start, 0);
 
     while !unvisited_nodes.is_empty() {
         let (risk, position) = unvisited_nodes.pop().unwrap().0;
-        for neighbor in cave.von_neumann_neighborhood(position) {
-            let neighbor_risk = risk + cave[neighbor];
+        for neighbor in neighbor_fn(position) {
+            let neighbor_risk = risk + weight_fn(neighbor);
 
-            if neighbor_risk < *distances.get(&neighbor).unwrap() {
-                distances.insert(neighbor, neighbor_risk);
+            if neighbor_risk < *weights.get(&neighbor).unwrap_or(&u32::MAX) {
+                weights.insert(neighbor, neighbor_risk);
                 unvisited_nodes.push(Reverse((neighbor_risk, neighbor)));
             }
         }
     }
 
-    return *distances.get(&end).unwrap();
+    return weights.get(&end).copied();
 }
 
 fn generate_full_map(original_map: &Array2<u32>) -> Array2<u32> {
