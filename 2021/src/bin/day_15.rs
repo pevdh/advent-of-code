@@ -1,4 +1,6 @@
 use aoc2021::*;
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::iter::FromIterator;
 
 aoc_main!(
@@ -53,57 +55,38 @@ fn task_1(cave: &Array2<u32>) -> Result<u32> {
 fn task_2(cave: &Array2<u32>) -> Result<u32> {
     let full_map = generate_full_map(cave);
 
-    // let start = (0, 0);
-    // let end = (full_map.nrows() - 1, full_map.ncols() - 1);
-    // let risk = dijkstra(&full_map, start, end);
+    let start = (0, 0);
+    let end = (full_map.nrows() - 1, full_map.ncols() - 1);
+    let risk = dijkstra(&full_map, start, end);
 
-    Ok(0)
+    Ok(risk)
 }
 
 fn dijkstra(cave: &Array2<u32>, start: Position, end: Position) -> u32 {
     assert!(cave.nrows() > 1 && cave.ncols() > 1);
 
-    let mut unvisited_nodes: HashSet<Position> =
-        HashSet::from_iter((0..cave.nrows()).cartesian_product(0..cave.ncols()));
-    let mut distances: HashMap<Position, u32> =
-        HashMap::from_iter(unvisited_nodes.iter().copied().map(|pos| (pos, u32::MAX)));
+    let mut unvisited_nodes = BinaryHeap::new();
 
+    let positions = (0..cave.nrows()).cartesian_product(0..cave.ncols());
+    let mut distances: HashMap<Position, u32> =
+        HashMap::from_iter(positions.map(|pos| (pos, u32::MAX)));
+
+    unvisited_nodes.push(Reverse((0, start)));
     distances.insert(start, 0);
 
-    let mut current = (0_usize, 0_usize);
+    while !unvisited_nodes.is_empty() {
+        let (risk, position) = unvisited_nodes.pop().unwrap().0;
+        for neighbor in neighbors(cave, position) {
+            let neighbor_risk = risk + cave[neighbor];
 
-    loop {
-        let unvisited_neighbors =
-            neighbors(cave, current).filter(|neighbor| unvisited_nodes.contains(neighbor));
-
-        let tentative_distance = *distances.get(&current).unwrap();
-
-        for neighbor in unvisited_neighbors {
-            let distance_to_neighbor = tentative_distance + cave[neighbor];
-
-            let neighbor_current_tentative_distance = distances.get_mut(&neighbor).unwrap();
-
-            if *neighbor_current_tentative_distance > distance_to_neighbor {
-                *neighbor_current_tentative_distance = distance_to_neighbor;
+            if neighbor_risk < *distances.get(&neighbor).unwrap() {
+                distances.insert(neighbor, neighbor_risk);
+                unvisited_nodes.push(Reverse((neighbor_risk, neighbor)));
             }
         }
-
-        unvisited_nodes.remove(&current);
-
-        if !unvisited_nodes.contains(&end) {
-            return *distances.get(&end).unwrap();
-        }
-
-        current = *unvisited_nodes
-            .iter()
-            .min_by(|pos_a, pos_b| {
-                distances
-                    .get(pos_a)
-                    .unwrap()
-                    .cmp(distances.get(pos_b).unwrap())
-            })
-            .unwrap();
     }
+
+    return *distances.get(&end).unwrap();
 }
 
 fn neighbors(a: &Array2<u32>, pos: (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
@@ -148,13 +131,4 @@ fn generate_full_map(original_map: &Array2<u32>) -> Array2<u32> {
     }
 
     new_map
-}
-
-fn print_grid(g: &Array2<u32>) {
-    for row in 0..g.nrows() {
-        for col in 0..g.ncols() {
-            print!("{}", g[[row, col]]);
-        }
-        println!()
-    }
 }
