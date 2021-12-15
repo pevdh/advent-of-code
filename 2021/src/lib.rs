@@ -234,3 +234,30 @@ impl Iterator for Neighborhood {
             .map(|idx| unsafe { self.neighbors.get_unchecked(idx).assume_init() })
     }
 }
+
+pub trait FromLines<S: Sized> {
+    fn from_2d_text(raw_input: &str) -> Result<S>;
+}
+
+impl FromLines<Array2<u8>> for Array2<u8> {
+    fn from_2d_text(raw_input: &str) -> Result<Array2<u8>> {
+        let cols = raw_input
+            .lines()
+            .next()
+            .map(|l| l.len())
+            .ok_or(anyhow!("Empty input"))?;
+        let rows = raw_input.lines().count();
+
+        let data: Result<Vec<u8>> = raw_input
+            .replace('\n', "")
+            .chars()
+            .map(|c| {
+                c.to_digit(10)
+                    .map(|d| d as u8)
+                    .ok_or(anyhow!("Unable to convert char to digit"))
+            })
+            .collect();
+
+        Ok(Array2::from_shape_vec((rows, cols), data?)?)
+    }
+}
