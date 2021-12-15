@@ -1,5 +1,15 @@
 use aoc2021::*;
 
+aoc_main!(
+    day: 2,
+    test_input: "forward 5\ndown 5\nforward 8\nup 3\ndown 8\nforward 2",
+    parser: parse,
+    task_1: task_1,
+    expected_1: 150,
+    task_2: task_2,
+    expected_2: 900,
+);
+
 enum Command {
     Forward(i32),
     Down(i32),
@@ -71,13 +81,3 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
 
     Ok(horizontal_position * depth)
 }
-
-aoc_main!(
-    day: 2,
-    test_input: "forward 5\ndown 5\nforward 8\nup 3\ndown 8\nforward 2",
-    parser: parse,
-    task_1: task_1,
-    expected_1: 150,
-    task_2: task_2,
-    expected_2: 900,
-);

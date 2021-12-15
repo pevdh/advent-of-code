@@ -15,23 +15,7 @@ aoc_main!(
 );
 
 fn parse(raw_input: &str) -> Result<Array2<u32>> {
-    let cols = raw_input
-        .lines()
-        .next()
-        .map(|l| l.len())
-        .ok_or(anyhow!("Empty input"))?;
-    let rows = raw_input.lines().count();
-
-    let data: Result<Vec<u32>> = raw_input
-        .replace('\n', "")
-        .chars()
-        .map(|c| {
-            c.to_digit(10)
-                .ok_or(anyhow!("Unable to convert char to digit"))
-        })
-        .collect();
-
-    Ok(Array2::from_shape_vec((rows, cols), data?)?)
+    Array2::from_2d_text(raw_input)
 }
 
 fn task_1(heightmap: &Array2<u32>) -> Result<u32> {
@@ -59,33 +43,13 @@ fn low_points(heightmap: &Array2<u32>) -> impl Iterator<Item = (usize, usize)> +
         .indexed_iter()
         .filter(move |(pos, &height)| {
             height
-                < neighbors(heightmap, *pos)
+                < heightmap
+                    .von_neumann_neighborhood(pos)
                     .map(|neighbor| heightmap[neighbor])
                     .min()
                     .unwrap()
         })
         .map(|(pos, _)| pos)
-}
-
-fn neighbors(a: &Array2<u32>, pos: (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
-    let row = pos.0 as i32;
-    let col = pos.1 as i32;
-    let mut v = smallvec![
-        (row - 1, col),
-        (row, col + 1),
-        (row + 1, col),
-        (row, col - 1),
-    ];
-
-    v.retain(|&mut (neighbor_row, neighbor_col)| {
-        neighbor_row >= 0
-            && neighbor_col >= 0
-            && neighbor_row < a.nrows() as i32
-            && neighbor_col < a.ncols() as i32
-    });
-
-    v.into_iter()
-        .map(|(pos_i, pos_j)| (pos_i as usize, pos_j as usize))
 }
 
 fn basin_size(low_point: (usize, usize), heightmap: &Array2<u32>) -> i32 {
@@ -102,7 +66,11 @@ fn basin_size(low_point: (usize, usize), heightmap: &Array2<u32>) -> i32 {
         visited[current] = 1;
         size += 1;
 
-        to_visit.extend(neighbors(heightmap, current).filter(|&n| heightmap[n] < 9));
+        to_visit.extend(
+            heightmap
+                .von_neumann_neighborhood(&current)
+                .filter(|&n| heightmap[n] < 9),
+        );
     }
 
     size

@@ -23,7 +23,7 @@ aoc_main!(
 );
 
 fn parse(raw_input: &str) -> Result<Array2<u8>> {
-    Ok(Array2::from_2d_lines(raw_input)?)
+    Array2::from_2d_text(raw_input)
 }
 
 fn task_1(cave_risk_map: &Array2<u8>) -> Result<u32> {

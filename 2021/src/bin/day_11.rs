@@ -22,23 +22,7 @@ aoc_main!(
 );
 
 fn parse(raw_input: &str) -> Result<Array2<u32>> {
-    let cols = raw_input
-        .lines()
-        .next()
-        .map(|l| l.len())
-        .ok_or(anyhow!("Empty input"))?;
-    let rows = raw_input.lines().count();
-
-    let data: Result<Vec<u32>> = raw_input
-        .replace('\n', "")
-        .chars()
-        .map(|c| {
-            c.to_digit(10)
-                .ok_or(anyhow!("Unable to convert char to digit"))
-        })
-        .collect();
-
-    Ok(Array2::from_shape_vec((rows, cols), data?)?)
+    Array2::from_2d_text(raw_input)
 }
 
 fn task_1(energy_levels: &Array2<u32>) -> Result<i32> {
@@ -84,7 +68,8 @@ fn simulate_step(energy_levels: &mut Array2<u32>) -> i32 {
         energy_levels[current] = 0;
         pos_flashed[current] = 1;
 
-        let adjacent = neighbors(energy_levels, current)
+        let adjacent = energy_levels
+            .moore_neighborhood(&current)
             .filter(|&neighbor_pos| pos_flashed[neighbor_pos] == 0);
 
         for neighbor_pos in adjacent {
@@ -97,29 +82,4 @@ fn simulate_step(energy_levels: &mut Array2<u32>) -> i32 {
     }
 
     flashes
-}
-
-fn neighbors(a: &Array2<u32>, pos: (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
-    let row = pos.0 as i32;
-    let col = pos.1 as i32;
-    let mut v = smallvec![
-        (row - 1, col),
-        (row, col + 1),
-        (row + 1, col),
-        (row, col - 1),
-        (row - 1, col - 1),
-        (row - 1, col + 1),
-        (row + 1, col - 1),
-        (row + 1, col + 1),
-    ];
-
-    v.retain(|&mut (neighbor_row, neighbor_col)| {
-        neighbor_row >= 0
-            && neighbor_col >= 0
-            && neighbor_row < a.nrows() as i32
-            && neighbor_col < a.ncols() as i32
-    });
-
-    v.into_iter()
-        .map(|(pos_i, pos_j)| (pos_i as usize, pos_j as usize))
 }
