@@ -1,7 +1,6 @@
 use aoc2021::*;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::iter::FromIterator;
 
 aoc_main!(
     day: 15,
@@ -76,7 +75,7 @@ fn dijkstra(cave: &Array2<u32>, start: Position, end: Position) -> u32 {
 
     while !unvisited_nodes.is_empty() {
         let (risk, position) = unvisited_nodes.pop().unwrap().0;
-        for neighbor in neighbors(cave, position) {
+        for neighbor in cave.von_neumann_neighborhood(position) {
             let neighbor_risk = risk + cave[neighbor];
 
             if neighbor_risk < *distances.get(&neighbor).unwrap() {
@@ -87,27 +86,6 @@ fn dijkstra(cave: &Array2<u32>, start: Position, end: Position) -> u32 {
     }
 
     return *distances.get(&end).unwrap();
-}
-
-fn neighbors(a: &Array2<u32>, pos: (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
-    let row = pos.0 as i32;
-    let col = pos.1 as i32;
-    let mut v = smallvec![
-        (row - 1, col),
-        (row, col + 1),
-        (row + 1, col),
-        (row, col - 1),
-    ];
-
-    v.retain(|&mut (neighbor_row, neighbor_col)| {
-        neighbor_row >= 0
-            && neighbor_col >= 0
-            && neighbor_row < a.nrows() as i32
-            && neighbor_col < a.ncols() as i32
-    });
-
-    v.into_iter()
-        .map(|(pos_i, pos_j)| (pos_i as usize, pos_j as usize))
 }
 
 fn generate_full_map(original_map: &Array2<u32>) -> Array2<u32> {
