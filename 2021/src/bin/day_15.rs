@@ -22,58 +22,42 @@ aoc_main!(
     expected_2: 315,
 );
 
-fn parse(raw_input: &str) -> Result<Array2<u32>> {
-    let cols = raw_input
-        .lines()
-        .next()
-        .map(|l| l.len())
-        .ok_or(anyhow!("Empty input"))?;
-    let rows = raw_input.lines().count();
-
-    let data: Result<Vec<u32>> = raw_input
-        .replace('\n', "")
-        .chars()
-        .map(|c| {
-            c.to_digit(10)
-                .ok_or(anyhow!("Unable to convert char to digit"))
-        })
-        .collect();
-
-    Ok(Array2::from_shape_vec((rows, cols), data?)?)
+fn parse(raw_input: &str) -> Result<Array2<u8>> {
+    Ok(Array2::from_2d_lines(raw_input)?)
 }
 
-fn task_1(cave_risk_map: &Array2<u32>) -> Result<u32> {
+fn task_1(cave_risk_map: &Array2<u8>) -> Result<u32> {
     let start = (0, 0);
-    let end = (cave_risk_map.nrows() - 1, cave_risk_map.ncols() - 1);
+    let goal = (cave_risk_map.nrows() - 1, cave_risk_map.ncols() - 1);
 
     let neighbor_fn = |pos| cave_risk_map.von_neumann_neighborhood(&pos);
-    let weight_fn = |pos| cave_risk_map[pos];
+    let weight_fn = |pos| cave_risk_map[pos] as u32;
 
-    let risk = dijkstra(start, end, neighbor_fn, weight_fn);
+    let risk = dijkstra(start, goal, neighbor_fn, weight_fn);
 
-    risk.ok_or_else(|| anyhow!("Unable to find path from {:?} to {:?}", start, end))
+    risk.ok_or_else(|| anyhow!("Unable to find path from {:?} to {:?}", start, goal))
 }
 
-fn task_2(cave_risk_map: &Array2<u32>) -> Result<u32> {
-    let full_cave_risk_map = generate_full_map(cave_risk_map);
+fn task_2(cave_risk_map: &Array2<u8>) -> Result<u32> {
+    let full_cave_risk_map = generate_full_map(cave_risk_map, 5);
 
     let start = (0, 0);
-    let end = (
+    let goal = (
         full_cave_risk_map.nrows() - 1,
         full_cave_risk_map.ncols() - 1,
     );
 
     let neighbor_fn = |pos| full_cave_risk_map.von_neumann_neighborhood(&pos);
-    let weight_fn = |pos| full_cave_risk_map[pos];
+    let weight_fn = |pos| full_cave_risk_map[pos] as u32;
 
-    let total_risk = dijkstra(start, end, neighbor_fn, weight_fn);
+    let total_risk = dijkstra(start, goal, neighbor_fn, weight_fn);
 
-    total_risk.ok_or_else(|| anyhow!("Unable to find path from {:?} to {:?}", start, end))
+    total_risk.ok_or_else(|| anyhow!("Unable to find path from {:?} to {:?}", start, goal))
 }
 
 fn dijkstra<T, NeighborFn, NeighborFnRet, WeightFn>(
     start: T,
-    end: T,
+    goal: T,
     neighbor_fn: NeighborFn,
     weight_fn: WeightFn,
 ) -> Option<u32>
@@ -83,35 +67,41 @@ where
     NeighborFnRet: Iterator<Item = T>,
     WeightFn: Fn(T) -> u32,
 {
-    let mut unvisited_nodes = BinaryHeap::new();
+    let mut heap = BinaryHeap::new();
     let mut weights = HashMap::new();
 
-    unvisited_nodes.push(Reverse((0, start)));
+    heap.push(Reverse((0, start)));
     weights.insert(start, 0);
 
-    while !unvisited_nodes.is_empty() {
-        let (risk, position) = unvisited_nodes.pop().unwrap().0;
+    while let Some(Reverse((risk, position))) = heap.pop() {
+        if position == goal {
+            return Some(risk);
+        }
+
         for neighbor in neighbor_fn(position) {
             let neighbor_risk = risk + weight_fn(neighbor);
 
             if neighbor_risk < *weights.get(&neighbor).unwrap_or(&u32::MAX) {
                 weights.insert(neighbor, neighbor_risk);
-                unvisited_nodes.push(Reverse((neighbor_risk, neighbor)));
+                heap.push(Reverse((neighbor_risk, neighbor)));
             }
         }
     }
 
-    return weights.get(&end).copied();
+    None
 }
 
-fn generate_full_map(original_map: &Array2<u32>) -> Array2<u32> {
-    let mut new_map = Array2::zeros((original_map.nrows() * 5, original_map.ncols() * 5));
+fn generate_full_map(original_map: &Array2<u8>, multiplier: usize) -> Array2<u8> {
+    let mut new_map = Array2::zeros((
+        original_map.nrows() * multiplier,
+        original_map.ncols() * multiplier,
+    ));
 
     for ((row, col), value) in new_map.indexed_iter_mut() {
         let original_row = row % original_map.nrows();
         let original_col = col % original_map.ncols();
 
-        let original_value = original_map[(original_row, original_col)];
+        let original_value = original_map[(original_row, original_col)] as u32;
 
         let row_offset = (row / original_map.nrows()) as u32;
         let col_offset = (col / original_map.ncols()) as u32;
@@ -121,7 +111,7 @@ fn generate_full_map(original_map: &Array2<u32>) -> Array2<u32> {
             new_value %= 9
         }
 
-        *value = new_value;
+        *value = new_value as u8;
     }
 
     new_map
