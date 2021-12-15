@@ -2,6 +2,16 @@ use anyhow::{anyhow, Context};
 use aoc2021::*;
 use std::cmp;
 
+aoc_main!(
+    day: 7,
+    test_input: "16,1,2,0,4,2,7,1,2,14",
+    parser: parse,
+    task_1: task_1,
+    expected_1: 37,
+    task_2: task_2,
+    expected_2: 168,
+);
+
 fn parse(raw_input: &str) -> Result<Vec<i32>> {
     raw_input
         .split(',')
@@ -51,13 +61,3 @@ fn task_2(positions: &[i32]) -> Result<i64> {
 
     Ok(fuel_consumption as i64)
 }
-
-aoc_main!(
-    day: 7,
-    test_input: "16,1,2,0,4,2,7,1,2,14",
-    parser: parse,
-    task_1: task_1,
-    expected_1: 37,
-    task_2: task_2,
-    expected_2: 168,
-);

@@ -1,6 +1,6 @@
 use aoc2021::*;
-use std::iter::FromIterator;
 use nom::sequence::{preceded, separated_pair};
+use std::iter::FromIterator;
 
 aoc_main!(
     day: 13,
@@ -98,7 +98,6 @@ fn task_2(input: &ParsedInput) -> Result<u8> {
     Ok(0)
 }
 
-
 fn fold(dots: &mut HashSet<(usize, usize)>, instruction: &FoldInstruction) {
     match instruction {
         FoldInstruction::Up { y } => fold_up(dots, *y),
@@ -107,7 +106,8 @@ fn fold(dots: &mut HashSet<(usize, usize)>, instruction: &FoldInstruction) {
 }
 
 fn fold_up(dots: &mut HashSet<(usize, usize)>, fold_y: usize) {
-    let translated_dots: Vec<((usize, usize), (usize, usize))> = dots.iter()
+    let translated_dots: Vec<((usize, usize), (usize, usize))> = dots
+        .iter()
         .filter(|&(_, y)| *y > fold_y)
         .map(|(x, y)| ((*x, *y), (*x, fold_y - (*y - fold_y))))
         .collect();
@@ -119,7 +119,8 @@ fn fold_up(dots: &mut HashSet<(usize, usize)>, fold_y: usize) {
 }
 
 fn fold_left(dots: &mut HashSet<(usize, usize)>, fold_x: usize) {
-    let translated_dots: Vec<((usize, usize), (usize, usize))> = dots.iter()
+    let translated_dots: Vec<((usize, usize), (usize, usize))> = dots
+        .iter()
         .filter(|&(x, _)| *x > fold_x)
         .map(|(x, y)| ((*x, *y), (fold_x - (*x - fold_x), *y)))
         .collect();

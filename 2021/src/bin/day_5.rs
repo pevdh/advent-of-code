@@ -1,5 +1,24 @@
 use aoc2021::*;
 
+aoc_main!(
+    day: 5,
+    test_input: r#"0,9 -> 5,9
+8,0 -> 0,8
+9,4 -> 3,4
+2,2 -> 2,1
+7,0 -> 7,4
+6,4 -> 2,0
+0,9 -> 2,9
+3,4 -> 1,4
+0,0 -> 8,8
+5,5 -> 8,2"#,
+    parser: parse,
+    task_1: task_1,
+    expected_1: 5,
+    task_2: task_2,
+    expected_2: 12,
+);
+
 #[derive(Debug)]
 struct ParsedInput {
     lines: Vec<Line>,
@@ -98,22 +117,3 @@ fn task_2(input: &ParsedInput) -> Result<i32> {
 
     Ok(num_points_with_at_least_two_lines as i32)
 }
-
-aoc_main!(
-    day: 5,
-    test_input: r#"0,9 -> 5,9
-8,0 -> 0,8
-9,4 -> 3,4
-2,2 -> 2,1
-7,0 -> 7,4
-6,4 -> 2,0
-0,9 -> 2,9
-3,4 -> 1,4
-0,0 -> 8,8
-5,5 -> 8,2"#,
-    parser: parse,
-    task_1: task_1,
-    expected_1: 5,
-    task_2: task_2,
-    expected_2: 12,
-);

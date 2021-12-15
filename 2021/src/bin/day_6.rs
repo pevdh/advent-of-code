@@ -1,5 +1,15 @@
 use aoc2021::*;
 
+aoc_main!(
+    day: 6,
+    test_input: "3,4,3,1,2",
+    parser: parse,
+    task_1: task_1,
+    expected_1: 5934,
+    task_2: task_2,
+    expected_2: 26984457539,
+);
+
 fn parse(raw_input: &str) -> Result<Vec<i32>> {
     Ok(raw_input.split(',').map(|s| s.parse().unwrap()).collect())
 }
@@ -35,13 +45,3 @@ fn task_2(ages: &[i32]) -> Result<i64> {
 
     Ok(num_fish)
 }
-
-aoc_main!(
-    day: 6,
-    test_input: "3,4,3,1,2",
-    parser: parse,
-    task_1: task_1,
-    expected_1: 5934,
-    task_2: task_2,
-    expected_2: 26984457539,
-);

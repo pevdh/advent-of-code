@@ -1,19 +1,18 @@
 use aoc2021::*;
-use ndarray::{Array, Array2, Axis};
+use ndarray::{Array2, Axis};
+
+aoc_main!(
+    day: 3,
+    test_input: "00100\n11110\n10110\n10111\n10101\n01111\n00111\n11100\n10000\n11001\n00010\n01010",
+    parser: parse,
+    task_1: task_1,
+    expected_1: 198,
+    task_2: task_2,
+    expected_2: 230,
+);
 
 fn parse(raw_input: &str) -> Result<Array2<u8>> {
-    let rows = raw_input.lines().count();
-    let columns = raw_input.lines().next().unwrap().len();
-
-    let mut array = Array::zeros((rows, columns));
-
-    for (i, row) in raw_input.lines().enumerate() {
-        for (j, ch) in row.chars().enumerate() {
-            array[[i, j]] = if ch == '1' { 1u8 } else { 0u8 };
-        }
-    }
-
-    Ok(array)
+    Array2::from_2d_text(raw_input)
 }
 
 fn count_zeros_and_ones<'a, I: IntoIterator<Item = &'a u8>>(v: I) -> (i32, i32) {
@@ -130,13 +129,3 @@ fn task_2(numbers: &Array2<u8>) -> Result<i32> {
 
     Ok((oxygen_generator_rating * co2_scrubber_rating) as i32)
 }
-
-aoc_main!(
-    day: 3,
-    test_input: "00100\n11110\n10110\n10111\n10101\n01111\n00111\n11100\n10000\n11001\n00010\n01010",
-    parser: parse,
-    task_1: task_1,
-    expected_1: 198,
-    task_2: task_2,
-    expected_2: 230,
-);

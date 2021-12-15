@@ -1,5 +1,15 @@
 use aoc2021::*;
 
+aoc_main!(
+    day: 1,
+    test_input: "199\n200\n208\n210\n200\n207\n240\n269\n260\n263",
+    parser: parse,
+    task_1: count_increased,
+    expected_1: 7,
+    task_2: count_increased_sliding_window,
+    expected_2: 5,
+);
+
 struct ParsedInput {
     depths: Vec<i32>,
 }
@@ -40,13 +50,3 @@ fn count_increased_sliding_window(input: &ParsedInput) -> Result<i32> {
 
     Ok(increased as i32)
 }
-
-aoc_main!(
-    day: 1,
-    test_input: "199\n200\n208\n210\n200\n207\n240\n269\n260\n263",
-    parser: parse,
-    task_1: count_increased,
-    expected_1: 7,
-    task_2: count_increased_sliding_window,
-    expected_2: 5,
-);
