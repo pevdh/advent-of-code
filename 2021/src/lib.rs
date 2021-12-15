@@ -10,9 +10,12 @@ use std::time::Instant;
 pub use anyhow::anyhow;
 pub use itertools::Itertools;
 pub use ndarray::{Array2, ArrayView2};
+use ndarray::{ArrayBase, Ix2, RawData};
 pub use smallvec::smallvec_inline as smallvec;
 pub use smallvec::SmallVec;
 pub use std::collections::{HashMap, HashSet, VecDeque};
+use std::mem::MaybeUninit;
+use std::ops::Range;
 
 pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
 
@@ -142,3 +145,92 @@ pub trait Frequencies<FreqType: PrimInt>: Iterator {
 }
 
 impl<It: ?Sized, FreqType: PrimInt> Frequencies<FreqType> for It where It: Iterator {}
+
+pub struct Neighborhood {
+    neighbors: [MaybeUninit<(usize, usize)>; 8],
+    alive: Range<usize>,
+}
+
+pub trait Neighbors {
+    fn moore_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood;
+    fn von_neumann_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood;
+}
+
+impl<S: RawData> Neighbors for ArrayBase<S, Ix2> {
+    fn moore_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood {
+        let mut neighbors = [(0, 0); 8];
+        let mut size = 0;
+
+        for rel_pos in [
+            (-1, -1),
+            (-1, 0),
+            (1, 1),
+            (0, -1),
+            (0, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+        ] {
+            let new_pos = (pos.0 as i32 + rel_pos.0, pos.1 as i32 + rel_pos.1);
+
+            let in_bounds = new_pos.0 >= 0
+                && new_pos.1 >= 0
+                && new_pos.0 < self.nrows() as i32
+                && new_pos.1 < self.ncols() as i32;
+
+            if in_bounds {
+                neighbors[size] = (new_pos.0 as usize, new_pos.1 as usize);
+                size += 1;
+            }
+        }
+
+        let mut n = Neighborhood {
+            neighbors: [unsafe { MaybeUninit::uninit().assume_init() }; 8],
+            alive: 0..size,
+        };
+
+        let dst_ptr = n.neighbors.as_mut_ptr() as *mut _;
+        unsafe { neighbors.as_ptr().copy_to_nonoverlapping(dst_ptr, size) };
+
+        n
+    }
+
+    fn von_neumann_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood {
+        let mut neighbors = [(0, 0); 4];
+
+        let mut size = 0;
+        for rel_pos in [(-1, 0), (0, -1), (0, 1), (1, 0)] {
+            let new_pos = (pos.0 as i32 + rel_pos.0, pos.1 as i32 + rel_pos.1);
+
+            let in_bounds = new_pos.0 >= 0
+                && new_pos.1 >= 0
+                && new_pos.0 < self.nrows() as i32
+                && new_pos.1 < self.ncols() as i32;
+
+            if in_bounds {
+                neighbors[size] = (new_pos.0 as usize, new_pos.1 as usize);
+                size += 1;
+            }
+        }
+
+        let mut n = Neighborhood {
+            neighbors: [unsafe { MaybeUninit::uninit().assume_init() }; 8],
+            alive: 0..size,
+        };
+
+        let dst_ptr = n.neighbors.as_mut_ptr() as *mut _;
+        unsafe { neighbors.as_ptr().copy_to_nonoverlapping(dst_ptr, size) };
+
+        n
+    }
+}
+
+impl Iterator for Neighborhood {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.alive
+            .next()
+            .map(|idx| unsafe { self.neighbors.get_unchecked(idx).assume_init() })
+    }
+}
