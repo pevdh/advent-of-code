@@ -147,12 +147,17 @@ impl Operator {
     }
 }
 
-fn version(i: (&[u8], usize)) -> IResult<(&[u8], usize), u8> {
+// Since Rust does not have bit slices, a bit slice is represented by a slice of
+// bytes and an index into the first byte.
+type BitSlice<'a> = (&'a [u8], usize);
+
+// A parser always returns the remaining input besides its output
+fn version(i: BitSlice) -> IResult<BitSlice, u8> {
     // Version is a u8 from 3 bits
     take(3usize)(i)
 }
 
-fn type_id(i: (&[u8], usize)) -> IResult<(&[u8], usize), u8> {
+fn type_id(i: BitSlice) -> IResult<BitSlice, u8> {
     // Type ID is a u8 from 3 bits
     take(3usize)(i)
 }
@@ -162,14 +167,14 @@ struct PacketHeader {
     type_id: u8,
 }
 
-fn header(i: (&[u8], usize)) -> IResult<(&[u8], usize), PacketHeader> {
+fn header(i: BitSlice) -> IResult<BitSlice, PacketHeader> {
     // A header consists of a version and then a type_id
     map(tuple((version, type_id)), |(version, type_id)| {
         PacketHeader { version, type_id }
     })(i)
 }
 
-fn literal_packet(i: (&[u8], usize)) -> IResult<(&[u8], usize), Packet> {
+fn literal_packet(i: BitSlice) -> IResult<BitSlice, Packet> {
     let group_prefix_one = |i| tag(0x1, 1usize)(i);
     let group_prefix_zero = |i| tag(0x0, 1usize)(i);
 
@@ -224,7 +229,7 @@ fn literal_packet(i: (&[u8], usize)) -> IResult<(&[u8], usize), Packet> {
     )(i)
 }
 
-fn operator_packet(i: (&[u8], usize)) -> IResult<(&[u8], usize), Packet> {
+fn operator_packet(i: BitSlice) -> IResult<BitSlice, Packet> {
     // Read total length (15 bits), then parse subpackets while length of subpackets read so
     // far is less than the total length.
     let subpackets_from_length = |i| {
@@ -271,7 +276,7 @@ fn operator_packet(i: (&[u8], usize)) -> IResult<(&[u8], usize), Packet> {
     parse(i)
 }
 
-fn consumed_bits(input_a: (&[u8], usize), input_b: (&[u8], usize)) -> usize {
+fn consumed_bits(input_a: BitSlice, input_b: BitSlice) -> usize {
     // Calculate the number of consumed bits between two bit inputs (input_a - input_b).
     let (input_a, bit_idx_a) = input_a;
     let (input_b, bit_idx_b) = input_b;
@@ -279,13 +284,13 @@ fn consumed_bits(input_a: (&[u8], usize), input_b: (&[u8], usize)) -> usize {
     (input_a.len() * 8 - bit_idx_a) - (input_b.len() * 8 - bit_idx_b)
 }
 
-fn packet(i: (&[u8], usize)) -> IResult<(&[u8], usize), Packet> {
+fn packet(i: BitSlice) -> IResult<BitSlice, Packet> {
     // A packet can either be a literal packet or an operator packet
     alt((literal_packet, operator_packet))(i)
 }
 
 fn parse_packet(i: &[u8]) -> IResult<&[u8], Packet> {
-    // Convert the bytes input into a bits input and parse a single packet.
+    // Convert the bytes input into a bit input and parse a single packet.
     // Leftover bits are discarded
     bits(packet)(i)
 }
