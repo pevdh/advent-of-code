@@ -193,7 +193,9 @@ fn literal_packet(i: (&[u8], usize)) -> IResult<(&[u8], usize), Packet> {
         )(i)
     };
 
-    // Collect little-endian nibbles into a u64.
+    // Collect little-endian nibbles into a u64 (i.e. nibbles[0] represents the lower 4 bits of the u64).
+    // Nibbles are represented by a Vec<u8> where
+    // only the least-significant byte of each byte in the vector is considered.
     // A variable length u64 consists of a _maximum_ of 64 / 4 = 16 nibbles.
     let variable_length_u64 = move |i| {
         map(nibbles, |parts| {
