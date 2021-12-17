@@ -14,6 +14,8 @@ use ndarray::{ArrayBase, Ix2, RawData};
 pub use smallvec::smallvec_inline as smallvec;
 pub use smallvec::SmallVec;
 pub use std::collections::{HashMap, HashSet, VecDeque};
+use std::io;
+use std::io::Write;
 use std::mem::MaybeUninit;
 use std::ops::Range;
 
@@ -87,6 +89,7 @@ where
             solution.expected_1, task1_test_output
         );
     }
+    io::stdout().flush().unwrap();
 
     let task1_start = Instant::now();
     let task1_output = (solution.task_1)(parsed_input.borrow())
@@ -104,6 +107,7 @@ where
             solution.expected_2, task2_test_output
         );
     }
+    io::stdout().flush().unwrap();
 
     let task2_start = Instant::now();
     let task2_output = (solution.task_2)(parsed_input.borrow())
