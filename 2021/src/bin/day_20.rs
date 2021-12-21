@@ -21,7 +21,7 @@ aoc_main!(
     task_1: task_1,
     expected_1: 35,
     task_2: task_2,
-    expected_2: 112,
+    expected_2: 3351,
 );
 
 #[derive(Debug)]
@@ -73,8 +73,19 @@ fn task_1(input: &ParsedInput) -> Result<usize> {
     Ok(enhanced.iter().filter(|v| **v == 1).count())
 }
 
-fn task_2(_input: &ParsedInput) -> Result<i32> {
-    Ok(0)
+fn task_2(input: &ParsedInput) -> Result<usize> {
+    let mut infinite_image = InfiniteImage { image: input.input_image.clone(), fill_pixel: 0 };
+
+    for _ in 0..50 {
+        infinite_image = enhance2(infinite_image, &input.algorithm);
+    }
+
+    Ok(infinite_image.image.iter().filter(|v| **v == 1).count())
+}
+
+struct InfiniteImage {
+    image: Array2<u8>,
+    fill_pixel: u8,
 }
 
 fn enhance(image: Array2<u8>, algorithm: &Array1<u8>) -> Array2<u8> {
@@ -108,7 +119,44 @@ fn enhance(image: Array2<u8>, algorithm: &Array1<u8>) -> Array2<u8> {
         }
     }
 
-    result
+    result.slice(s![2..-2,2..-2]).into_owned()
+}
+
+fn enhance2(infinite_image: InfiniteImage, algorithm: &Array1<u8>) -> InfiniteImage {
+    let mut result = Array2::zeros((infinite_image.image.nrows() + 6, infinite_image.image.ncols() + 6));
+
+    // Pad image with three rows and columns of zeros
+    let mut padded_image = Array2::from_elem((infinite_image.image.nrows() + 6, infinite_image.image.ncols() + 6), infinite_image.fill_pixel);
+    padded_image
+        .slice_mut(s![3..-3, 3..-3])
+        .assign(&infinite_image.image);
+
+    for i in 1..(padded_image.nrows() - 1) {
+        for j in 1..(padded_image.ncols() - 1) {
+            let bits = [
+                padded_image[(i - 1, j - 1)],
+                padded_image[(i - 1, j)],
+                padded_image[(i - 1, j + 1)],
+                padded_image[(i, j - 1)],
+                padded_image[(i, j)],
+                padded_image[(i, j + 1)],
+                padded_image[(i + 1, j - 1)],
+                padded_image[(i + 1, j)],
+                padded_image[(i + 1, j + 1)],
+            ];
+
+            let idx = to_u16(&bits);
+
+            let value = algorithm[idx as usize];
+
+            result[(i, j)] = value;
+        }
+    }
+
+    InfiniteImage {
+        image: result.slice(s![2..-2,2..-2]).into_owned(),
+        fill_pixel: if infinite_image.fill_pixel == 0 { algorithm[0] } else { algorithm[511] },
+    }
 }
 
 fn to_u16(bits: &[u8]) -> u16 {
