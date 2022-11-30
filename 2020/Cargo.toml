@@ -1,0 +1,12 @@
+[package]
+name = "aoc2020"
+version = "0.1.0"
+authors = ["Pieter van den Ham <p.e.vandenham@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.66"
+itertools = "0.10.3"
+indoc = "1.0.7"
+num-traits = "0.2.15"
+ndarray = "0.15.6"
