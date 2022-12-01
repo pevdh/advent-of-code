@@ -244,7 +244,7 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
             .lines()
             .next()
             .map(|l| l.len())
-            .ok_or(anyhow!("Empty input"))?;
+            .ok_or_else(|| anyhow!("Empty input"))?;
         let rows = raw_input.lines().count();
 
         let data: Result<Vec<T>> = raw_input
@@ -253,7 +253,7 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
             .map(|c| {
                 c.to_digit(10)
                     .map(|d| T::from(d).unwrap())
-                    .ok_or(anyhow!("Unable to convert char to digit"))
+                    .ok_or_else(|| anyhow!("Unable to convert char to digit"))
             })
             .collect();
 
