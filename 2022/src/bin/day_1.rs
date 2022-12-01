@@ -26,38 +26,34 @@ aoc_main!(
     expected_2: 45000,
 );
 
-type ParsedInput = Vec<i32>;
+fn parse(raw_input: &str) -> Result<Vec<Vec<i32>>> {
+    Ok(raw_input.split("\n\n").fold(Vec::new(), |mut acc, p| {
+        acc.push(p.lines().map(|l| l.parse().unwrap()).collect());
 
-fn parse(raw_input: &str) -> Result<ParsedInput> {
-    let mut calories = Vec::new();
-
-    let mut total = 0;
-    for line in raw_input.lines() {
-        if line == "" {
-            calories.push(total);
-            total = 0;
-        } else {
-            total += line.parse::<i32>().unwrap();
-        }
-    }
-
-    calories.push(total);
-
-    return Ok(calories);
+        acc
+    }))
 }
 
-fn task_1(input: &ParsedInput) -> Result<i32> {
-    let mut calories = input.clone();
-    calories.sort();
-    calories.reverse();
-
-    return Ok(calories[0]);
+fn task_1(input: &[Vec<i32>]) -> Result<i32> {
+    input
+        .iter()
+        // Sum each elf inventory
+        .map(|calories| calories.iter().sum::<i32>())
+        // Compute the highest total number of calories
+        .sorted()
+        .rev()
+        .next()
+        .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn task_2(input: &ParsedInput) -> Result<i32> {
-    let mut calories = input.clone();
-    calories.sort();
-    calories.reverse();
-
-    return Ok(calories[0..3].iter().sum());
+fn task_2(input: &[Vec<i32>]) -> Result<i32> {
+    Ok(input
+        .iter()
+        // Sum each elf inventory
+        .map(|calories| calories.iter().sum::<i32>())
+        // Compute three highest total number of calories and sum them
+        .sorted()
+        .rev()
+        .take(3)
+        .sum())
 }
