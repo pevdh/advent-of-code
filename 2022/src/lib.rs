@@ -1,11 +1,11 @@
 use std::borrow::Borrow;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
+use std::io;
 use std::io::Write;
 use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::time::Instant;
-use std::{io, iter};
 
 use anyhow::Context;
 use ndarray::{ArrayBase, Ix2, RawData};
@@ -261,37 +261,53 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
     }
 }
 
-pub trait StringTools {
-    fn columns<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a>;
+pub struct StringColumns<'a> {
+    lines: Vec<&'a str>,
+    column_index: usize,
+    longest_line_len: usize,
+    scratch_space: String,
 }
 
-impl StringTools for &str {
-    fn columns<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
+impl<'a> Iterator for StringColumns<'a> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<String> {
+        if self.column_index >= self.longest_line_len {
+            return None;
+        }
+
+        self.scratch_space.clear();
+
+        for line in &self.lines {
+            if let Some(c) = line.chars().nth(self.column_index) {
+                self.scratch_space.push(c);
+            } else {
+                self.scratch_space.push('\0');
+            }
+        }
+
+        self.column_index += 1;
+
+        Some(self.scratch_space.clone())
+    }
+}
+
+pub trait StringTools<'a> {
+    fn columns(&self) -> StringColumns<'a>;
+}
+
+impl<'a> StringTools<'a> for &'a str {
+    fn columns(&self) -> StringColumns<'a> {
         let lines = self.lines().collect::<Vec<_>>();
-        let mut column_index = 0;
+        let column_index = 0;
 
         let longest_line_len = lines.iter().map(|line| line.len()).max().unwrap_or(0);
 
-        let mut s = String::with_capacity(longest_line_len);
-
-        Box::new(iter::from_fn(move || {
-            if column_index >= longest_line_len {
-                return None;
-            }
-
-            s.clear();
-
-            for line in &lines {
-                if let Some(c) = line.chars().nth(column_index) {
-                    s.push(c);
-                } else {
-                    s.push('\0');
-                }
-            }
-
-            column_index += 1;
-
-            Some(s.clone())
-        }))
+        StringColumns {
+            lines,
+            scratch_space: String::with_capacity(longest_line_len),
+            column_index,
+            longest_line_len,
+        }
     }
 }
