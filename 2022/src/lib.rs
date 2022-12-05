@@ -1,11 +1,11 @@
 use std::borrow::Borrow;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
-use std::io;
 use std::io::Write;
 use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::time::Instant;
+use std::{io, iter};
 
 use anyhow::Context;
 use ndarray::{ArrayBase, Ix2, RawData};
@@ -258,5 +258,40 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
             .collect();
 
         Ok(Array2::from_shape_vec((rows, cols), data?)?)
+    }
+}
+
+pub trait StringTools {
+    fn columns<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a>;
+}
+
+impl StringTools for &str {
+    fn columns<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
+        let lines = self.lines().collect::<Vec<_>>();
+        let mut column_index = 0;
+
+        let longest_line_len = lines.iter().map(|line| line.len()).max().unwrap_or(0);
+
+        let mut s = String::with_capacity(longest_line_len);
+
+        Box::new(iter::from_fn(move || {
+            if column_index >= longest_line_len {
+                return None;
+            }
+
+            s.clear();
+
+            for line in &lines {
+                if let Some(c) = line.chars().nth(column_index) {
+                    s.push(c);
+                } else {
+                    s.push('\0');
+                }
+            }
+
+            column_index += 1;
+
+            Some(s.clone())
+        }))
     }
 }
