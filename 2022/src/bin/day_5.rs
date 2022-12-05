@@ -81,16 +81,10 @@ fn task_1(input: &ParsedInput) -> Result<String> {
 
     apply_procedure_with_cratemover_9000(&mut stacks, &input.rearrangement_procedure);
 
-    Ok(stacks
-        .iter()
-        .filter_map(|s| s.last())
-        .collect::<String>())
+    Ok(stacks.iter().filter_map(|s| s.last()).collect::<String>())
 }
 
-fn apply_procedure_with_cratemover_9000(
-    stacks: &mut [Vec<char>],
-    procedure: &[RearrangementStep],
-) {
+fn apply_procedure_with_cratemover_9000(stacks: &mut [Vec<char>], procedure: &[RearrangementStep]) {
     for step in procedure {
         let from_stack = &mut stacks[step.from - 1];
         let crates = from_stack.split_off(from_stack.len() - step.number);
@@ -105,16 +99,10 @@ fn task_2(input: &ParsedInput) -> Result<String> {
 
     apply_procedure_with_cratemover_9001(&mut stacks, &input.rearrangement_procedure);
 
-    Ok(stacks
-        .iter()
-        .filter_map(|s| s.last())
-        .collect::<String>())
+    Ok(stacks.iter().filter_map(|s| s.last()).collect::<String>())
 }
 
-fn apply_procedure_with_cratemover_9001(
-    stacks: &mut [Vec<char>],
-    procedure: &[RearrangementStep],
-) {
+fn apply_procedure_with_cratemover_9001(stacks: &mut [Vec<char>], procedure: &[RearrangementStep]) {
     for step in procedure {
         let from_stack = &mut stacks[step.from - 1];
         let crates = from_stack.split_off(from_stack.len() - step.number);
