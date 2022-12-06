@@ -35,5 +35,5 @@ fn count_unique(characters: &[char]) -> u32 {
         m |= 1 << (*ch as u8 - b'a');
     }
 
-    return m.count_ones();
+    m.count_ones()
 }
