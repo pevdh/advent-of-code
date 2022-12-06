@@ -21,7 +21,7 @@ fn task_1(input: &[u8]) -> Result<usize> {
     let desired_unique_count = 4;
     let pos = input
         .windows(desired_unique_count)
-        .position(|window| count_unique(window) == desired_unique_count as u32);
+        .position(all_unique);
 
     pos.map(|pos| pos + desired_unique_count)
         .ok_or_else(|| anyhow!("No solution"))
@@ -31,17 +31,19 @@ fn task_2(input: &[u8]) -> Result<usize> {
     let desired_unique_count = 14;
     let pos = input
         .windows(desired_unique_count)
-        .position(|window| count_unique(window) == desired_unique_count as u32);
+        .position(all_unique);
 
     pos.map(|pos| pos + desired_unique_count)
         .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn count_unique(characters: &[u8]) -> u32 {
+fn all_unique(characters: &[u8]) -> bool {
+    assert!(characters.len() < 64);
+
     let mut m = 0u64;
     for ch in characters {
         m |= 1 << (*ch - b'a');
     }
 
-    m.count_ones()
+    m.count_ones() as usize == characters.len()
 }
