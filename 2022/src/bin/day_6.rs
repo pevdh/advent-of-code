@@ -18,21 +18,22 @@ fn parse(raw_input: &str) -> Result<Vec<char>> {
 }
 
 fn task_1(input: &[char]) -> Result<usize> {
-    let pos = (4..input.len()).find(|i| {
-        let set: HashSet<char> = HashSet::from_iter(input[i - 4..*i].iter().cloned());
-
-        set.len() == 4
-    });
+    let pos = (4..input.len()).find(|i| count_unique(&input[i - 4..*i]) == 4);
 
     pos.ok_or_else(|| anyhow!("No solution"))
 }
 
 fn task_2(input: &[char]) -> Result<usize> {
-    let pos = (14..input.len()).find(|i| {
-        let set: HashSet<char> = HashSet::from_iter(input[i - 14..*i].iter().cloned());
-
-        set.len() == 14
-    });
+    let pos = (14..input.len()).find(|i| count_unique(&input[i - 14..*i]) == 14);
 
     pos.ok_or_else(|| anyhow!("No solution"))
+}
+
+fn count_unique(characters: &[char]) -> u32 {
+    let mut m = 0u64;
+    for ch in characters {
+        m |= 1 << (*ch as u8 - b'a');
+    }
+
+    return m.count_ones();
 }
