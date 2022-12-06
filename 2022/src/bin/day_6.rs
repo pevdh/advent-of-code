@@ -13,26 +13,34 @@ aoc_main!(
     expected_2: 19,
 );
 
-fn parse(raw_input: &str) -> Result<Vec<char>> {
-    Ok(raw_input.chars().collect())
+fn parse(raw_input: &str) -> Result<Vec<u8>> {
+    Ok(raw_input.chars().map(|c| c as u8).collect())
 }
 
-fn task_1(input: &[char]) -> Result<usize> {
-    let pos = (4..input.len()).find(|i| count_unique(&input[i - 4..*i]) == 4);
+fn task_1(input: &[u8]) -> Result<usize> {
+    let desired_unique_count = 4;
+    let pos = input
+        .windows(desired_unique_count)
+        .position(|window| count_unique(window) == desired_unique_count as u32);
 
-    pos.ok_or_else(|| anyhow!("No solution"))
+    pos.map(|pos| pos + desired_unique_count)
+        .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn task_2(input: &[char]) -> Result<usize> {
-    let pos = (14..input.len()).find(|i| count_unique(&input[i - 14..*i]) == 14);
+fn task_2(input: &[u8]) -> Result<usize> {
+    let desired_unique_count = 14;
+    let pos = input
+        .windows(desired_unique_count)
+        .position(|window| count_unique(window) == desired_unique_count as u32);
 
-    pos.ok_or_else(|| anyhow!("No solution"))
+    pos.map(|pos| pos + desired_unique_count)
+        .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn count_unique(characters: &[char]) -> u32 {
+fn count_unique(characters: &[u8]) -> u32 {
     let mut m = 0u64;
     for ch in characters {
-        m |= 1 << (*ch as u8 - b'a');
+        m |= 1 << (*ch - b'a');
     }
 
     m.count_ones()
