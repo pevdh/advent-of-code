@@ -35,9 +35,9 @@ fn task_1(input: &[String]) -> Result<u64> {
 
             let mut common_items = first_compartment_items.intersection(&second_compartment_items);
 
-            return *common_items.next().unwrap() as u8;
+            *common_items.next().unwrap() as u8
         })
-        .map(|common_item| priority_of(common_item))
+        .map(priority_of)
         .sum())
 }
 
@@ -59,10 +59,10 @@ fn task_2(input: &[String]) -> Result<u64> {
 
             let mut common_items = a
                 .chars()
-                .filter(|item| b.contains(&item) && c.contains(&item));
+                .filter(|item| b.contains(item) && c.contains(item));
 
-            return common_items.next().unwrap() as u8;
+            common_items.next().unwrap() as u8
         })
-        .map(|common_item| priority_of(common_item))
+        .map(priority_of)
         .sum())
 }

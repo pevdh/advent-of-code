@@ -24,9 +24,9 @@ fn parse(raw_input: &str) -> Result<Vec<(AssignmentRange, AssignmentRange)>> {
     Ok(raw_input
         .lines()
         .map(|line| {
-            let mut s = line.split(",");
-            let mut range_1_s = s.next().unwrap().split("-");
-            let mut range_2_s = s.next().unwrap().split("-");
+            let mut s = line.split(',');
+            let mut range_1_s = s.next().unwrap().split('-');
+            let mut range_2_s = s.next().unwrap().split('-');
 
             let range_1_min = range_1_s.next().unwrap().parse().unwrap();
             let range_1_max = range_1_s.next().unwrap().parse().unwrap();
@@ -47,7 +47,7 @@ fn task_1(input: &[(AssignmentRange, AssignmentRange)]) -> Result<usize> {
 }
 
 fn fully_contains(a: &AssignmentRange, b: &AssignmentRange) -> bool {
-    return a.0 >= b.0 && a.1 <= b.1;
+    a.0 >= b.0 && a.1 <= b.1
 }
 
 fn task_2(input: &[(AssignmentRange, AssignmentRange)]) -> Result<usize> {
