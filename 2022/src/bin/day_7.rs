@@ -35,55 +35,12 @@ aoc_main!(
     expected_2: 24933642,
 );
 
-#[derive(Debug, Clone)]
-enum Command {
-    Cd { directory: String },
-    Ls { file_sizes: Vec<usize> },
+fn parse(raw_input: &str) -> Result<String> {
+    Ok(raw_input.to_owned())
 }
 
-fn parse(raw_input: &str) -> Result<Vec<Command>> {
-    let mut file_sizes = vec![];
-    let mut in_ls_output = false;
-
-    let mut commands = vec![];
-
-    for line in raw_input.lines() {
-        if line.starts_with('$') {
-            if in_ls_output {
-                commands.push(Command::Ls {
-                    file_sizes: file_sizes.clone(),
-                });
-                file_sizes.clear();
-                in_ls_output = false;
-            }
-
-            if line.starts_with("$ ls") {
-                in_ls_output = true;
-            } else if line.starts_with("$ cd") {
-                let target = line.split(' ').last().unwrap();
-                commands.push(Command::Cd {
-                    directory: target.to_owned(),
-                });
-            }
-        } else if !line.starts_with("dir ") {
-            let mut spl = line.split(' ');
-            let sz = spl.next().unwrap().parse()?;
-
-            file_sizes.push(sz)
-        }
-    }
-
-    if in_ls_output {
-        commands.push(Command::Ls {
-            file_sizes: file_sizes.clone(),
-        });
-    }
-
-    Ok(commands)
-}
-
-fn task_1(input: &[Command]) -> Result<usize> {
-    let directories = determine_directory_sizes_from(input);
+fn task_1(input: &str) -> Result<usize> {
+    let directories = determine_directory_sizes_from_terminal_output(input);
 
     Ok(directories
         .values()
@@ -92,8 +49,8 @@ fn task_1(input: &[Command]) -> Result<usize> {
         .sum())
 }
 
-fn task_2(input: &[Command]) -> Result<usize> {
-    let directories = determine_directory_sizes_from(input);
+fn task_2(input: &str) -> Result<usize> {
+    let directories = determine_directory_sizes_from_terminal_output(input);
 
     let disk_space_available = 70000000usize;
     let required_unused_space = 30000000usize;
@@ -110,36 +67,52 @@ fn task_2(input: &[Command]) -> Result<usize> {
         .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn determine_directory_sizes_from(commands: &[Command]) -> HashMap<Vec<&str>, usize> {
-    let commands = &commands[1..];
+fn determine_directory_sizes_from_terminal_output(
+    terminal_output: &str,
+) -> HashMap<Vec<&str>, usize> {
+    let lines = terminal_output.lines();
 
     let mut directories = HashMap::new();
-    let mut current_path = vec![];
+    let mut path_components = vec![];
 
-    for command in commands {
-        match command {
-            Command::Cd { directory } => {
-                if directory == ".." {
-                    current_path.pop();
-                } else {
-                    current_path.push(directory.as_str());
-                }
+    for line in lines {
+        if line == "$ cd /" {
+            continue;
+        }
+
+        if line.starts_with("$ cd") {
+            let target = line.split(' ').last().unwrap();
+            if target == ".." {
+                path_components.pop();
+            } else {
+                path_components.push(target);
             }
-            Command::Ls { file_sizes } => {
-                let file_sizes = file_sizes.iter().sum();
 
-                directories.insert(current_path.clone(), file_sizes);
+            continue;
+        }
 
-                // update parent directory sizes
-                let parent_paths = (0..current_path.len()).map(|i| &current_path[..i]);
+        if line.starts_with("$ ls") {
+            continue;
+        }
 
-                for parent_path in parent_paths {
-                    directories
-                        .entry(parent_path.to_vec())
-                        .and_modify(|sz| *sz += file_sizes)
-                        .or_insert(0);
-                }
-            }
+        if line.starts_with("dir ") {
+            continue;
+        }
+
+        let mut spl = line.split(' ');
+        let size: usize = spl.next().unwrap().parse().unwrap();
+
+        directories
+            .entry(path_components.clone())
+            .and_modify(|sz| *sz += size)
+            .or_insert(size);
+
+        // update parent directory sizes
+        for parent_path_components in (0..path_components.len()).map(|i| &path_components[..i]) {
+            directories
+                .entry(parent_path_components.to_vec())
+                .and_modify(|sz| *sz += size)
+                .or_insert(size);
         }
     }
 
