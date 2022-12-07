@@ -19,9 +19,7 @@ fn parse(raw_input: &str) -> Result<Vec<u8>> {
 
 fn task_1(input: &[u8]) -> Result<usize> {
     let desired_unique_count = 4;
-    let pos = input
-        .windows(desired_unique_count)
-        .position(all_unique);
+    let pos = input.windows(desired_unique_count).position(all_unique);
 
     pos.map(|pos| pos + desired_unique_count)
         .ok_or_else(|| anyhow!("No solution"))
@@ -29,9 +27,7 @@ fn task_1(input: &[u8]) -> Result<usize> {
 
 fn task_2(input: &[u8]) -> Result<usize> {
     let desired_unique_count = 14;
-    let pos = input
-        .windows(desired_unique_count)
-        .position(all_unique);
+    let pos = input.windows(desired_unique_count).position(all_unique);
 
     pos.map(|pos| pos + desired_unique_count)
         .ok_or_else(|| anyhow!("No solution"))
