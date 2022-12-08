@@ -15,7 +15,7 @@ pub use std::collections::{HashMap, HashSet, VecDeque};
 
 pub use anyhow::anyhow;
 pub use itertools::Itertools;
-pub use ndarray::Array2;
+pub use ndarray::{Array2, ArrayView2};
 
 pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
 
@@ -309,5 +309,91 @@ impl<'a> StringTools<'a> for &'a str {
             column_index,
             longest_line_len,
         }
+    }
+}
+
+pub trait MoreItertools: Iterator {
+    #[inline]
+    fn take_until<P>(self, predicate: P) -> TakeUntil<Self, P>
+    where
+        Self: Sized,
+    {
+        TakeUntil {
+            it: self,
+            flag: false,
+            predicate,
+        }
+    }
+}
+
+impl<I: Iterator> MoreItertools for I {}
+
+pub struct TakeUntil<I, P> {
+    it: I,
+    predicate: P,
+    flag: bool,
+}
+
+impl<I: Iterator, P> Iterator for TakeUntil<I, P>
+where
+    P: FnMut(&I::Item) -> bool,
+{
+    type Item = I::Item;
+
+    #[inline]
+    fn next(&mut self) -> Option<I::Item> {
+        let x = self.it.next()?;
+
+        if self.flag {
+            return None;
+        }
+
+        if (self.predicate)(&x) {
+            self.flag = true;
+        }
+
+        Some(x)
+    }
+}
+
+pub struct StepIter2<'a, T> {
+    view: ArrayView2<'a, T>,
+    step: (i32, i32),
+    current: (usize, usize),
+}
+
+pub trait Array2Tools<'a, T> {
+    fn step_from(self, init: (usize, usize), step: (i32, i32)) -> StepIter2<'a, T>;
+}
+
+impl<'a, T> Array2Tools<'a, T> for ArrayView2<'a, T> {
+    fn step_from(self, init: (usize, usize), step: (i32, i32)) -> StepIter2<'a, T> {
+        StepIter2 {
+            view: self,
+            current: init,
+            step,
+        }
+    }
+}
+
+impl<'a, T> Iterator for StepIter2<'a, T>
+where
+    T: Copy,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current.0 == 0 && self.step.0 < 0 {
+            return None;
+        }
+
+        if self.current.1 == 0 && self.step.1 < 0 {
+            return None;
+        }
+
+        self.current.0 = ((self.current.0 as i32) + self.step.0) as usize;
+        self.current.1 = ((self.current.1 as i32) + self.step.1) as usize;
+
+        self.view.get((self.current.0, self.current.1)).copied()
     }
 }
