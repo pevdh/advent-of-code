@@ -5,7 +5,7 @@ use std::io;
 use std::io::Write;
 use std::mem::MaybeUninit;
 use std::ops::Range;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use ndarray::{ArrayBase, Ix2, RawData};
@@ -29,6 +29,12 @@ pub struct AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2
     pub expected_2: Task2Output,
 }
 
+pub struct TimingInfo {
+    pub parsing: Duration,
+    pub task_1: Duration,
+    pub task_2: Duration,
+}
+
 pub fn run<
     Parser,
     ParserOutput,
@@ -42,7 +48,7 @@ pub fn run<
     input_file_path: &str,
     input: &str,
     solution: &AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn>,
-) -> Result<()>
+) -> Result<TimingInfo>
 where
     Parser: Fn(&str) -> Result<ParserOutput>,
     ParserOutput: Borrow<Task1Input> + Borrow<Task2Input>,
@@ -56,12 +62,14 @@ where
     let parsed_test_input =
         (solution.parser)(solution.test_input).with_context(|| "Error while parsing test input")?;
 
+    let parsing_start = Instant::now();
     let parsed_input = (solution.parser)(input).with_context(|| {
         format!(
             "Error while parsing input (input originated from \"{}\")",
             input_file_path
         )
     })?;
+    let parse_time = parsing_start.elapsed();
 
     let task1_test_output = (solution.task_1)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 1 on test input")?;
@@ -79,7 +87,8 @@ where
     let task1_start = Instant::now();
     let task1_output = (solution.task_1)(parsed_input.borrow())
         .with_context(|| "Error while running task 1 on input")?;
-    println!("Task 1: {} ({:?})", task1_output, task1_start.elapsed());
+    let task1_time = task1_start.elapsed();
+    println!("Task 1: {}", task1_output);
 
     let task2_test_output = (solution.task_2)(parsed_test_input.borrow())
         .with_context(|| "Error while running task 2 on test input")?;
@@ -97,20 +106,25 @@ where
     let task2_start = Instant::now();
     let task2_output = (solution.task_2)(parsed_input.borrow())
         .with_context(|| "While running task 2 on input")?;
-    println!("Task 2: {} ({:?})", task2_output, task2_start.elapsed());
+    let task2_time = task2_start.elapsed();
+    println!("Task 2: {}", task2_output);
 
-    Ok(())
+    Ok(TimingInfo {
+        parsing: parse_time,
+        task_1: task1_time,
+        task_2: task2_time,
+    })
 }
 
 #[macro_export]
 macro_rules! aoc_main {
     (day: $day:expr, test_input: $test_input:expr, $($tt:tt)*) => {
-        use indoc::indoc;
 
         fn main() {
             let input_file_path: &str = concat!("../../input/day_", stringify!($day), ".txt");
             let input: &str = include_str!(concat!("../../input/day_", stringify!($day), ".txt"));
 
+            use indoc::indoc;
             let solution = AdventOfCodeSolution {
                 day: $day,
                 // Remove leading spaces from test input at compile time
@@ -118,11 +132,16 @@ macro_rules! aoc_main {
                 $($tt)*
             };
 
+            use std::time::Instant;
+            let start = Instant::now();
             match run(&input_file_path, &input, &solution) {
                 Err(e) => {
                     eprintln!("{:?}", e);
                 },
-                _ => {},
+                Ok(timing_info) => {
+                    let total = timing_info.parsing + timing_info.task_1 + timing_info.task_2;
+                    println!("parsing: {:?} | task 1: {:?} | task 2: {:?} | total: {:?}", timing_info.parsing, timing_info.task_1, timing_info.task_2, total)
+                },
             }
         }
     }
