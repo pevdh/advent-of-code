@@ -63,7 +63,11 @@ fn task_2(input: &Array2<u32>) -> Result<usize> {
         .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn calculate_scenic_score(tree_map: &Array2<u32>, location_row: usize, location_col: usize) -> usize {
+fn calculate_scenic_score(
+    tree_map: &Array2<u32>,
+    location_row: usize,
+    location_col: usize,
+) -> usize {
     let location_height = tree_map[[location_row, location_col]];
 
     let right = tree_map
