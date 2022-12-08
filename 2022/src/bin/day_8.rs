@@ -17,11 +17,11 @@ aoc_main!(
     expected_2: 8,
 );
 
-fn parse(raw_input: &str) -> Result<Array2<i32>> {
+fn parse(raw_input: &str) -> Result<Array2<u32>> {
     Array2::from_2d_text(raw_input)
 }
 
-fn task_1(input: &Array2<i32>) -> Result<usize> {
+fn task_1(input: &Array2<u32>) -> Result<usize> {
     let visible: usize = input
         .indexed_iter()
         .filter(|&((row, col), &tree)| {
@@ -55,7 +55,7 @@ fn task_1(input: &Array2<i32>) -> Result<usize> {
     Ok(visible)
 }
 
-fn task_2(input: &Array2<i32>) -> Result<i64> {
+fn task_2(input: &Array2<u32>) -> Result<usize> {
     input
         .indexed_iter()
         .map(|((row, col), _)| calculate_scenic_score(input, row, col))
@@ -63,32 +63,32 @@ fn task_2(input: &Array2<i32>) -> Result<i64> {
         .ok_or_else(|| anyhow!("No solution"))
 }
 
-fn calculate_scenic_score(tree_map: &Array2<i32>, location_row: usize, location_col: usize) -> i64 {
+fn calculate_scenic_score(tree_map: &Array2<u32>, location_row: usize, location_col: usize) -> usize {
     let location_height = tree_map[[location_row, location_col]];
 
     let right = tree_map
         .view()
         .step_from((location_row, location_col), (0, 1))
-        .take_until(|t: &i32| *t >= location_height)
+        .take_until(|t: &u32| *t >= location_height)
         .count();
 
     let left = tree_map
         .view()
         .step_from((location_row, location_col), (0, -1))
-        .take_until(|t: &i32| *t >= location_height)
+        .take_until(|t: &u32| *t >= location_height)
         .count();
 
     let up = tree_map
         .view()
         .step_from((location_row, location_col), (-1, 0))
-        .take_until(|t: &i32| *t >= location_height)
+        .take_until(|t: &u32| *t >= location_height)
         .count();
 
     let down = tree_map
         .view()
         .step_from((location_row, location_col), (1, 0))
-        .take_until(|t: &i32| *t >= location_height)
+        .take_until(|t: &u32| *t >= location_height)
         .count();
 
-    (right * left * up * down) as i64
+    right * left * up * down
 }
