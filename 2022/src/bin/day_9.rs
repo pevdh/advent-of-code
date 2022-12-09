@@ -47,33 +47,14 @@ fn task_1(input: &[Motion]) -> Result<usize> {
     let num_tail_locations = input
         .iter()
         .flat_map(|m| iter::repeat(m.direction).take(m.number_of_steps))
-        .fold(HashSet::new(), {
-            let mut head = (0, 0);
-            let mut tail = (0, 0);
+        .scan([(0, 0); 2], |rope, dir| {
+            move_rope(dir, rope);
 
-            move |mut acc, dir| {
-                match dir {
-                    'R' => head.0 += 1,
-                    'L' => head.0 -= 1,
-                    'U' => head.1 += 1,
-                    'D' => head.1 -= 1,
-                    _ => panic!("Invalid direction"),
-                }
-
-                let hor_sq_dist = (head.0 - tail.0) * (head.0 - tail.0);
-                let vert_sq_dist = (head.1 - tail.1) * (head.1 - tail.1);
-
-                if hor_sq_dist > 1 || vert_sq_dist > 1 {
-                    tail.0 += (head.0 - tail.0).clamp(-1, 1);
-                    tail.1 += (head.1 - tail.1).clamp(-1, 1);
-                }
-
-                acc.insert(tail);
-
-                acc
-            }
+            Some(*rope)
         })
-        .len();
+        .map(|rope| rope[1])
+        .unique()
+        .count();
 
     Ok(num_tail_locations)
 }
@@ -84,41 +65,36 @@ fn task_2(input: &[Motion]) -> Result<usize> {
     let num_tail_locations = input
         .iter()
         .flat_map(|m| iter::repeat(m.direction).take(m.number_of_steps))
-        .fold(HashSet::new(), {
-            let mut head = (0, 0);
-            let mut tails = [(0, 0); 9];
+        .scan([(0, 0); 10], |rope, dir| {
+            move_rope(dir, rope);
 
-            move |mut acc, dir| {
-                match dir {
-                    'R' => head.0 += 1,
-                    'L' => head.0 -= 1,
-                    'U' => head.1 += 1,
-                    'D' => head.1 -= 1,
-                    _ => panic!("Invalid direction"),
-                }
-
-                update_tail(head, &mut tails);
-
-                acc.insert(tails[8]);
-
-                acc
-            }
+            Some(*rope)
         })
-        .len();
+        .map(|rope| rope[8])
+        .unique()
+        .count();
 
     Ok(num_tail_locations)
 }
 
-fn update_tail<const N: usize>(head: (i32, i32), tails: &mut [(i32, i32); N]) {
-    for i in 0..N {
-        let prev = if i == 0 { head } else { tails[i - 1] };
+fn move_rope<const N: usize>(dir: char, rope: &mut [(i32, i32); N]) {
+    match dir {
+        'R' => rope[0].0 += 1,
+        'L' => rope[0].0 -= 1,
+        'U' => rope[0].1 += 1,
+        'D' => rope[0].1 -= 1,
+        _ => panic!("Invalid direction"),
+    }
 
-        let hor_sq_dist = (prev.0 - tails[i].0) * (prev.0 - tails[i].0);
-        let vert_sq_dist = (prev.1 - tails[i].1) * (prev.1 - tails[i].1);
+    for i in 1..N {
+        let prev = rope[i - 1];
+
+        let hor_sq_dist = (prev.0 - rope[i].0) * (prev.0 - rope[i].0);
+        let vert_sq_dist = (prev.1 - rope[i].1) * (prev.1 - rope[i].1);
 
         if hor_sq_dist > 1 || vert_sq_dist > 1 {
-            tails[i].0 += (prev.0 - tails[i].0).clamp(-1, 1);
-            tails[i].1 += (prev.1 - tails[i].1).clamp(-1, 1);
+            rope[i].0 += (prev.0 - rope[i].0).clamp(-1, 1);
+            rope[i].1 += (prev.1 - rope[i].1).clamp(-1, 1);
         }
     }
 }
