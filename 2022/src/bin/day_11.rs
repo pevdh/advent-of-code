@@ -121,10 +121,11 @@ fn task_2(monkey_configs: &[MonkeyConfiguration]) -> Result<i64> {
         })
         .collect::<Vec<_>>();
 
-    let divisor: i64 = monkey_configs.iter().map(|c| c.test_divisor).product();
+    // All divisors are primes, which means that the least common multiple is simply the product of all divisors.
+    let least_common_multiple: i64 = monkey_configs.iter().map(|c| c.test_divisor).product();
 
     for _ in 0..10000 {
-        simulate_round_2(&mut monkey_states, monkey_configs, divisor);
+        simulate_round_2(&mut monkey_states, monkey_configs, least_common_multiple);
     }
 
     let monkey_business_level = monkey_states
@@ -162,14 +163,14 @@ fn simulate_round(monkey_states: &mut [MonkeyState], monkey_configs: &[MonkeyCon
 fn simulate_round_2(
     monkey_states: &mut [MonkeyState],
     monkey_configs: &[MonkeyConfiguration],
-    divisor: i64,
+    least_common_multiple: i64,
 ) {
     for monkey_idx in 0..monkey_states.len() {
         while let Some(worry_level) = monkey_states[monkey_idx].items.pop_front() {
             monkey_states[monkey_idx].inspect_count += 1;
 
             let worry_level = apply_operation(worry_level, monkey_configs[monkey_idx].operation);
-            let worry_level = worry_level % divisor;
+            let worry_level = worry_level % least_common_multiple;
 
             if worry_level % monkey_configs[monkey_idx].test_divisor as i64 == 0 {
                 monkey_states[monkey_configs[monkey_idx].true_monkey]
