@@ -44,6 +44,7 @@ fn shortest_path(
     let mut to_visit = VecDeque::new();
 
     to_visit.push_back((from, 0));
+    visited.insert(from);
 
     while let Some((pos, steps_taken)) = to_visit.pop_front() {
         if pos == to {
@@ -84,10 +85,10 @@ fn shortest_path_from_multiple(
     from: &[(usize, usize)],
     to: (usize, usize),
 ) -> Option<usize> {
-    let mut visited = HashSet::new();
-    let mut to_visit = VecDeque::new();
+    let mut to_visit: VecDeque<((usize, usize), usize)> =
+        VecDeque::from_iter(from.iter().map(|start| (*start, 0)));
 
-    to_visit.extend(from.iter().map(|start| (*start, 0)));
+    let mut visited: HashSet<(usize, usize)> = HashSet::from_iter(from.iter().copied());
 
     while let Some((pos, steps_taken)) = to_visit.pop_front() {
         if pos == to {
