@@ -60,7 +60,7 @@ fn shortest_path_from_multiple(
     let mut to_visit: VecDeque<((usize, usize), usize)> =
         VecDeque::from_iter(from.iter().map(|start| (*start, 0)));
 
-    let mut visited: HashSet<(usize, usize)> = HashSet::from_iter(from.iter().copied());
+    let mut visited = Array2::zeros((height_map.nrows(), height_map.ncols()));
 
     while let Some((pos, steps_taken)) = to_visit.pop_front() {
         if pos == to {
@@ -70,9 +70,9 @@ fn shortest_path_from_multiple(
         let neighbors = height_map.von_neumann_neighborhood(&pos);
 
         for neighbor in neighbors {
-            if can_reach(height_map[pos], height_map[neighbor]) && !visited.contains(&neighbor) {
+            if visited[neighbor] == 0 && can_reach(height_map[pos], height_map[neighbor]) {
                 to_visit.push_back((neighbor, steps_taken + 1));
-                visited.insert(neighbor);
+                visited[neighbor] = 1;
             }
         }
     }
