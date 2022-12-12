@@ -32,36 +32,8 @@ fn task_1(height_map: &Array2<u8>) -> Result<usize> {
         .unwrap()
         .0;
 
-    shortest_path(height_map, start, end).ok_or_else(|| anyhow!("No solution"))
-}
-
-fn shortest_path(
-    height_map: &Array2<u8>,
-    from: (usize, usize),
-    to: (usize, usize),
-) -> Option<usize> {
-    let mut visited = HashSet::new();
-    let mut to_visit = VecDeque::new();
-
-    to_visit.push_back((from, 0));
-    visited.insert(from);
-
-    while let Some((pos, steps_taken)) = to_visit.pop_front() {
-        if pos == to {
-            return Some(steps_taken);
-        }
-
-        let neighbors = height_map.von_neumann_neighborhood(&pos);
-
-        for neighbor in neighbors {
-            if can_reach(height_map[pos], height_map[neighbor]) && !visited.contains(&neighbor) {
-                to_visit.push_back((neighbor, steps_taken + 1));
-                visited.insert(neighbor);
-            }
-        }
-    }
-
-    None
+    let start = [start];
+    shortest_path_from_multiple(height_map, &start, end).ok_or_else(|| anyhow!("No solution"))
 }
 
 fn task_2(height_map: &Array2<u8>) -> Result<usize> {
