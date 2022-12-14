@@ -57,27 +57,33 @@ fn task_2(paths: &[StructurePath]) -> Result<usize> {
 }
 
 fn simulate_sand_unit(map: &Array2<u8>) -> Option<(usize, usize)> {
-    let (mut x, mut y) = (500, 0usize);
+    let is_clear = |x, y| map[[y, x]] == 0;
 
-    loop {
-        let possible_next_pos = [(x, y + 1), (x - 1, y + 1), (x + 1, y + 1)]
-            .iter()
-            .find(|(x, y)| map[[*y, *x]] == 0)
-            .copied();
-
-        if let Some((next_x, next_y)) = possible_next_pos {
-            // if we fall into the abyss
-            if next_y == map.nrows() - 1 {
-                return None;
-            }
-
-            x = next_x;
-            y = next_y;
+    let next_pos = |x, y| {
+        if is_clear(x, y + 1) {
+            Some((x, y + 1))
+        } else if is_clear(x - 1, y + 1) {
+            Some((x - 1, y + 1))
+        } else if is_clear(x + 1, y + 1) {
+            Some((x + 1, y + 1))
         } else {
-            // Sand unit is at rest
-            return Some((x, y));
+            None
         }
+    };
+
+    let (mut x, mut y) = (500, 0usize);
+    while let Some((next_x, next_y)) = next_pos(x, y) {
+        if next_y == map.nrows() - 1 {
+            // We've reached the abyss
+            return None;
+        }
+
+        x = next_x;
+        y = next_y;
     }
+
+    // Sand is at rest
+    Some((x, y))
 }
 
 fn build_map(structures: &[StructurePath], map_size: (usize, usize)) -> Array2<u8> {
