@@ -9,6 +9,8 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use ndarray::{ArrayBase, Ix2, RawData};
+use nom::error::{convert_error, VerboseError};
+use nom::{Err, IResult};
 use num_traits::PrimInt;
 
 pub use std::collections::{HashMap, HashSet, VecDeque};
@@ -18,6 +20,19 @@ pub use itertools::Itertools;
 pub use ndarray::{Array2, ArrayView2};
 
 pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
+
+pub fn nom_parse<'a, O>(
+    input: &'a str,
+    mut parser: impl FnMut(&'a str) -> IResult<&'a str, O, VerboseError<&'a str>>,
+) -> Result<O> {
+    let nom_parse_result = parser(input);
+
+    nom_parse_result.map(|(_i, o)| o).map_err(|e| match e {
+        Err::Error(e) => anyhow!("Parse errors:\n{}", convert_error(input, e)),
+        Err::Incomplete(_e) => anyhow!("Parse error: incomplete input"),
+        Err::Failure(_e) => anyhow!("Parse error: failure"),
+    })
+}
 
 pub struct AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn> {
     pub day: u32,
