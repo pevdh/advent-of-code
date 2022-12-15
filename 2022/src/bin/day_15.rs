@@ -107,28 +107,31 @@ fn task_2(sensors: &[Sensor]) -> Result<i64> {
     Err(anyhow!("No solution"))
 }
 
-fn points_outside(sensor: &Sensor) -> Vec<(i64, i64)> {
+fn points_outside(sensor: &Sensor) -> impl Iterator<Item = (i64, i64)> + '_ {
     let beacon_dist = manhattan_distance(sensor.location, sensor.beacon_location);
 
     let min_x = sensor.location.0 - beacon_dist - 1;
     let max_x = sensor.location.0 + beacon_dist + 1;
 
-    let mut points = vec![(min_x, sensor.location.1), (max_x, sensor.location.1)];
-    let mut rel_y = 1i64;
+    let mut rel_y = 0i64;
     let mut step = 1;
+    let mut x_range = (min_x)..=max_x;
 
-    for x in (min_x + 1)..max_x {
-        points.push((x, sensor.location.1 - rel_y));
-        points.push((x, sensor.location.1 + rel_y));
+    std::iter::from_fn(move || {
+        let x = x_range.next()?;
+
+        let top = (x, sensor.location.1 - rel_y);
+        let bottom = (x, sensor.location.1 + rel_y);
 
         if x == sensor.location.0 {
             step = -step;
         }
 
         rel_y += step;
-    }
 
-    points
+        Some((top, bottom))
+    })
+    .flat_map(|(a, b)| [a, b].into_iter())
 }
 
 aoc_main!(
