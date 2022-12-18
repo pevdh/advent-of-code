@@ -122,8 +122,6 @@ fn task_2(valves: &[Valve]) -> Result<u32> {
     Ok(pressure)
 }
 
-
-
 fn build_valve_path_costs(valves: &HashMap<ValveId, Valve>) -> HashMap<(ValveId, ValveId), u32> {
     let mut costs = HashMap::new();
 
