@@ -89,8 +89,8 @@ fn task_1(cubes: &[Coord]) -> Result<usize> {
 
 fn task_2(cubes: &[Coord]) -> Result<usize> {
     let cubes: HashSet<Coord> = HashSet::from_iter(cubes.iter().copied());
-    let mut known_trapped_cubes: HashSet<Coord> = HashSet::new();
-    let mut known_untrapped_cubes: HashSet<Coord> = HashSet::new();
+    let mut known_trapped_cubes: HashSet<Coord> = HashSet::default();
+    let mut known_untrapped_cubes: HashSet<Coord> = HashSet::default();
 
     let bb = compute_bounding_box(&cubes);
 
@@ -171,7 +171,7 @@ fn compute_trapped_cubes(
     ];
 
     let mut to_visit = VecDeque::new();
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     to_visit.push_back(start);
     visited.insert(start);

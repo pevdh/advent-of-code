@@ -1,4 +1,5 @@
 use aoc2022::*;
+
 use std::rc::Rc;
 
 aoc_main!(
@@ -33,7 +34,7 @@ fn parse(raw_input: &str) -> Result<Vec<JetDir>> {
 }
 
 fn task_1(jet_dirs: &[JetDir]) -> Result<u64> {
-    let mut stopped_rocks: HashSet<(u64, u64)> = HashSet::new();
+    let mut stopped_rocks: HashSet<(u64, u64)> = HashSet::default();
     let mut highest_rock = 0;
     let mut jet_dirs_idx = 0;
 
@@ -76,7 +77,7 @@ fn task_2(jet_dirs: &[JetDir]) -> Result<u64> {
         added_height: 0,
         jet_dir_idx: 0,
         highest_rock: 0,
-        stopped_rocks: HashSet::new(),
+        stopped_rocks: HashSet::default(),
     };
 
     let start_state = simulate_n_falling_rocks(jet_dirs, &initial_state, N);
@@ -114,13 +115,7 @@ fn simulate_n_falling_rocks(jet_dirs: &[JetDir], initial_state: &State, n: u64) 
     let mut stopped_rocks = initial_state.stopped_rocks.clone();
     let mut jet_dir_idx = initial_state.jet_dir_idx;
 
-    let hashset_size = (n as usize)
-        * (FIRST_ROCK.len()
-            + SECOND_ROCK.len()
-            + THIRD_ROCK.len()
-            + FOURTH_ROCK.len()
-            + FIFTH_ROCK.len());
-    let mut new_stopped_rocks = HashSet::with_capacity(hashset_size);
+    let mut new_stopped_rocks = HashSet::default();
     let highest_rock_at_start = initial_state.highest_rock;
 
     let mut highest_rock = initial_state.highest_rock;

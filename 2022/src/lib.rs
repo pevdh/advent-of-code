@@ -13,7 +13,11 @@ use nom::error::{convert_error, VerboseError};
 use nom::{Err, IResult};
 use num_traits::PrimInt;
 
-pub use std::collections::{HashMap, HashSet, VecDeque};
+pub use std::collections::VecDeque;
+
+use rustc_hash::{FxHashMap, FxHashSet};
+pub type HashSet<V> = FxHashSet<V>;
+pub type HashMap<K, V> = FxHashMap<K, V>;
 
 pub use anyhow::anyhow;
 pub use itertools::Itertools;
@@ -168,7 +172,7 @@ pub trait Frequencies<FreqType: PrimInt>: Iterator {
         Self: Sized,
         Self::Item: Eq + Hash,
     {
-        let mut counts = HashMap::new();
+        let mut counts = HashMap::default();
         self.for_each(|item| {
             let entry = counts.entry(item).or_insert_with(FreqType::zero);
             *entry = entry.add(FreqType::one());

@@ -123,7 +123,7 @@ fn task_2(valves: &[Valve]) -> Result<u32> {
 }
 
 fn build_valve_path_costs(valves: &HashMap<ValveId, Valve>) -> HashMap<(ValveId, ValveId), u32> {
-    let mut costs = HashMap::new();
+    let mut costs = HashMap::default();
 
     for &v1 in valves.keys() {
         for &v2 in valves.keys() {
@@ -135,7 +135,7 @@ fn build_valve_path_costs(valves: &HashMap<ValveId, Valve>) -> HashMap<(ValveId,
 }
 
 fn cost(valves: &HashMap<ValveId, Valve>, from: ValveId, to: ValveId) -> Option<u32> {
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut to_visit = VecDeque::new();
 
     to_visit.push_back((from, 0));
