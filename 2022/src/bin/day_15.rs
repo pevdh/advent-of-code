@@ -42,7 +42,7 @@ fn parse_sensor(line: &str) -> Sensor {
 }
 
 fn task_1(sensors: &[Sensor]) -> Result<usize> {
-    let mut covered_locations = HashSet::new();
+    let mut covered_locations = HashSet::default();
     let y = 2000000;
 
     for sensor in sensors {

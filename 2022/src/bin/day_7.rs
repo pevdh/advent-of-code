@@ -72,7 +72,7 @@ fn determine_directory_sizes_from_terminal_output(
 ) -> HashMap<Vec<&str>, usize> {
     let lines = terminal_output.lines();
 
-    let mut directories = HashMap::new();
+    let mut directories = HashMap::default();
     let mut path_components = vec![];
 
     for line in lines {
