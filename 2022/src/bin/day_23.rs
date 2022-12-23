@@ -34,13 +34,9 @@ fn parse(raw_input: &str) -> Result<HashSet<Coord>> {
 
 fn task_1(elves: &HashSet<Coord>) -> Result<i64> {
     let mut elves = elves.clone();
-    let mut first_direction_idx = 0;
 
-    for _ in 0..10 {
-        simulate_round(&mut elves, first_direction_idx);
-
-        // End of round
-        first_direction_idx = (first_direction_idx + 1) % DIRECTIONS.len();
+    for round in 1..=10 {
+        simulate_round(&mut elves, round);
     }
 
     let min_x = elves.iter().map(|(x, _)| *x).min().unwrap();
@@ -51,27 +47,24 @@ fn task_1(elves: &HashSet<Coord>) -> Result<i64> {
     Ok(((max_x - min_x + 1) * (max_y - min_y + 1)) - (elves.len() as i64))
 }
 
-fn task_2(elves: &HashSet<Coord>) -> Result<i64> {
+fn task_2(elves: &HashSet<Coord>) -> Result<usize> {
     let mut elves = elves.clone();
-    let mut first_direction_idx = 0;
 
-    let mut round = 1;
-    loop {
-        let num_moved = simulate_round(&mut elves, first_direction_idx);
+    for round in 1.. {
+        let num_moved = simulate_round(&mut elves, round);
 
         if num_moved == 0 {
             return Ok(round);
         }
-
-        // End of round
-        first_direction_idx = (first_direction_idx + 1) % DIRECTIONS.len();
-        round += 1;
     }
+
+    Err(anyhow!("No solution"))
 }
 
-fn simulate_round(elves: &mut HashSet<Coord>, first_direction_idx: usize) -> usize {
+fn simulate_round(elves: &mut HashSet<Coord>, round: usize) -> usize {
     let mut proposals = vec![];
     let mut proposal_count = HashMap::default();
+    let first_direction_idx = (round - 1) % DIRECTIONS.len();
 
     // First half of round
     for elf in elves.iter() {
@@ -85,9 +78,11 @@ fn simulate_round(elves: &mut HashSet<Coord>, first_direction_idx: usize) -> usi
             continue;
         }
 
-        let mut direction_idx = first_direction_idx;
-        for _ in 0..DIRECTIONS.len() {
-            let (move_to, check1, check2) = DIRECTIONS[direction_idx];
+        let directions = (first_direction_idx..)
+            .map(|idx| DIRECTIONS[idx % DIRECTIONS.len()])
+            .take(DIRECTIONS.len());
+
+        for (move_to, check1, check2) in directions {
             let proposed_elf_location = (elf.0 + move_to.0, elf.1 + move_to.1);
 
             if !elves.contains(&proposed_elf_location)
@@ -99,8 +94,6 @@ fn simulate_round(elves: &mut HashSet<Coord>, first_direction_idx: usize) -> usi
 
                 break;
             }
-
-            direction_idx = (direction_idx + 1) % DIRECTIONS.len();
         }
     }
 
