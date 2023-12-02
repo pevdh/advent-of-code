@@ -1,5 +1,5 @@
 use anyhow::Context;
-use aoc2022::*;
+use aoc2023::*;
 use ascii::{AsAsciiStr, IntoAsciiString};
 
 aoc_main!(
