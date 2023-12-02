@@ -1,4 +1,4 @@
-use aoc2022::*;
+use aoc2023::*;
 
 aoc_main!(
     day: 2,
