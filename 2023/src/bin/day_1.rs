@@ -1,6 +1,6 @@
 use anyhow::Context;
 use aoc2022::*;
-use ascii::{AsciiStr, AsciiString, IntoAsciiString};
+use ascii::{AsAsciiStr, IntoAsciiString};
 
 aoc_main!(
     day: 1,
@@ -17,35 +17,35 @@ aoc_main!(
     4nineeightseven2
     zoneight234
     7pqrstsixteen"#,
-    parser: parse,
     task_1: task_1,
     expected_1: 142,
     task_2: task_2,
     expected_2: 281,
 );
 
-fn parse(raw_input: &str) -> Result<AsciiString> {
-    raw_input
-        .to_string()
-        .into_ascii_string()
-        .with_context(|| "Input does contains non-ASCII characters.")
-}
+fn task_1(input: &str) -> Result<u32> {
+    let input = input
+        .as_ascii_str()
+        .with_context(|| "Input contains non-ASCII characters.")?;
 
-fn task_1(input: &AsciiStr) -> Result<u32> {
     Ok(input
         .lines()
-        .map(|line| {
+        .filter_map(|line| {
             let digits = line
                 .chars()
                 .filter_map(|ch| ch.to_digit(10))
                 .collect::<Vec<u32>>();
 
-            digits.first().unwrap() * 10 + digits.last().unwrap()
+            digits.first().zip(digits.last()).map(|(f, l)| f * 10 + l)
         })
         .sum())
 }
 
-fn task_2(input: &AsciiStr) -> Result<u32> {
+fn task_2(input: &str) -> Result<u32> {
+    let input = input
+        .as_ascii_str()
+        .with_context(|| "Input contains non-ASCII characters.")?;
+
     let spelled_out_digits = [
         "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
     ]
@@ -54,9 +54,9 @@ fn task_2(input: &AsciiStr) -> Result<u32> {
             .expect("parsing as ASCII string failed")
     });
 
-    Ok(input
+    let answer = input
         .lines()
-        .map(|line| {
+        .filter_map(|line| {
             let mut digits = vec![];
 
             for idx in 0..line.len() {
@@ -72,7 +72,9 @@ fn task_2(input: &AsciiStr) -> Result<u32> {
                 }
             }
 
-            digits.first().unwrap() * 10 + digits.last().unwrap()
+            digits.first().zip(digits.last()).map(|(f, l)| f * 10 + l)
         })
-        .sum())
+        .sum();
+
+    Ok(answer)
 }

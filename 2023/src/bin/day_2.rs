@@ -8,13 +8,6 @@ aoc_main!(
     Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
     Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
     Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"#,
-    test_input_2: r#"
-    Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
-    Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
-    Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
-    Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
-    Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"#,
-    parser: parse,
     task_1: task_1,
     expected_1: 8,
     task_2: task_2,
@@ -32,14 +25,13 @@ struct Set {
     blue: i64,
 }
 
-fn parse(raw_input: &str) -> Result<Vec<Game>> {
-    Ok(raw_input
+fn parse(input: &str) -> Result<Vec<Game>> {
+    Ok(input
         .lines()
         .map(|line| {
             let (s1, s2) = line.split_once(": ").unwrap();
 
-            let s3 = &s1["Game ".len()..];
-            let game_id = s3.parse::<u64>().unwrap();
+            let game_id = s1["Game ".len()..].parse::<u64>().unwrap();
 
             let mut sets = vec![];
             for set_str in s2.split("; ") {
@@ -67,7 +59,9 @@ fn parse(raw_input: &str) -> Result<Vec<Game>> {
         .collect())
 }
 
-fn task_1(games: &[Game]) -> Result<u64> {
+fn task_1(input: &str) -> Result<u64> {
+    let games = parse(input)?;
+
     Ok(games
         .iter()
         .filter(|game| {
@@ -82,29 +76,31 @@ fn task_1(games: &[Game]) -> Result<u64> {
         .sum())
 }
 
-fn task_2(games: &[Game]) -> Result<i64> {
+fn task_2(input: &str) -> Result<i64> {
+    let games = parse(input)?;
+
     Ok(games
         .iter()
         .map(|game| {
-            let mut min_red = 0;
-            let mut min_green = 0;
-            let mut min_blue = 0;
+            let mut max_red = 0;
+            let mut max_green = 0;
+            let mut max_blue = 0;
 
             for set in game.sets.iter() {
-                if min_red < set.red {
-                    min_red = set.red;
+                if max_red < set.red {
+                    max_red = set.red;
                 }
 
-                if min_green < set.green {
-                    min_green = set.green;
+                if max_green < set.green {
+                    max_green = set.green;
                 }
 
-                if min_blue < set.blue {
-                    min_blue = set.blue;
+                if max_blue < set.blue {
+                    max_blue = set.blue;
                 }
             }
 
-            min_red * min_green * min_blue
+            max_red * max_green * max_blue
         })
         .sum())
 }
