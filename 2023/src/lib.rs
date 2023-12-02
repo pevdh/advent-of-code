@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::io;
@@ -39,9 +38,8 @@ pub fn nom_parse<'a, O>(
     })
 }
 
-pub struct AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn> {
+pub struct AdventOfCodeSolution<Task1Output, Task1Fn, Task2Output, Task2Fn> {
     pub day: u32,
-    pub parser: Parser,
     pub test_input: &'static str,
     pub task_1: Task1Fn,
     pub expected_1: Task1Output,
@@ -51,48 +49,21 @@ pub struct AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2
 }
 
 pub struct TimingInfo {
-    pub parsing: Duration,
     pub task_1: Duration,
     pub task_2: Duration,
 }
 
-pub fn run<
-    Parser,
-    ParserOutput,
-    Task1Input,
-    Task1Output,
-    Task1Fn,
-    Task2Input,
-    Task2Output,
-    Task2Fn,
->(
-    input_file_path: &str,
+pub fn run<Task1Output, Task1Fn, Task2Output, Task2Fn>(
     input: &str,
-    solution: &AdventOfCodeSolution<Parser, Task1Output, Task1Fn, Task2Output, Task2Fn>,
+    solution: &AdventOfCodeSolution<Task1Output, Task1Fn, Task2Output, Task2Fn>,
 ) -> Result<TimingInfo>
 where
-    Parser: Fn(&str) -> Result<ParserOutput>,
-    ParserOutput: Borrow<Task1Input> + Borrow<Task2Input>,
-    Task1Input: ?Sized,
     Task1Output: PartialEq + Debug + Display,
-    Task1Fn: Fn(&Task1Input) -> Result<Task1Output>,
-    Task2Input: ?Sized,
+    Task1Fn: Fn(&str) -> Result<Task1Output>,
     Task2Output: PartialEq + Debug + Display,
-    Task2Fn: Fn(&Task2Input) -> Result<Task2Output>,
+    Task2Fn: Fn(&str) -> Result<Task2Output>,
 {
-    let parsed_test_input = (solution.parser)(solution.test_input)
-        .with_context(|| "Error while parsing test input 1")?;
-
-    let parsing_start = Instant::now();
-    let parsed_input = (solution.parser)(input).with_context(|| {
-        format!(
-            "Error while parsing input (input originated from \"{}\")",
-            input_file_path
-        )
-    })?;
-    let parse_time = parsing_start.elapsed();
-
-    let task1_test_output = (solution.task_1)(parsed_test_input.borrow())
+    let task1_test_output = (solution.task_1)(solution.test_input)
         .with_context(|| "Error while running task 1 on test input")?;
 
     if task1_test_output == solution.expected_1 {
@@ -106,15 +77,12 @@ where
     io::stdout().flush().unwrap();
 
     let task1_start = Instant::now();
-    let task1_output = (solution.task_1)(parsed_input.borrow())
-        .with_context(|| "Error while running task 1 on input")?;
+    let task1_output =
+        (solution.task_1)(input).with_context(|| "Error while running task 1 on input")?;
     let task1_time = task1_start.elapsed();
     println!("Task 1: {}", task1_output);
 
-    let parsed_test_input_2 = (solution.parser)(solution.test_input_2)
-        .with_context(|| "Error while parsing test input 2")?;
-
-    let task2_test_output = (solution.task_2)(parsed_test_input_2.borrow())
+    let task2_test_output = (solution.task_2)(solution.test_input_2)
         .with_context(|| "Error while running task 2 on test input")?;
 
     if task2_test_output == solution.expected_2 {
@@ -128,13 +96,11 @@ where
     io::stdout().flush().unwrap();
 
     let task2_start = Instant::now();
-    let task2_output = (solution.task_2)(parsed_input.borrow())
-        .with_context(|| "While running task 2 on input")?;
+    let task2_output = (solution.task_2)(input).with_context(|| "While running task 2 on input")?;
     let task2_time = task2_start.elapsed();
     println!("Task 2: {}", task2_output);
 
     Ok(TimingInfo {
-        parsing: parse_time,
         task_1: task1_time,
         task_2: task2_time,
     })
@@ -159,17 +125,21 @@ macro_rules! aoc_main {
 
             use std::time::Instant;
             let start = Instant::now();
-            match run(&input_file_path, &input, &solution) {
+            match run(&input, &solution) {
                 Err(e) => {
                     eprintln!("{:?}", e);
                 },
                 Ok(timing_info) => {
-                    let total = timing_info.parsing + timing_info.task_1 + timing_info.task_2;
-                    println!("parsing: {:?} | task 1: {:?} | task 2: {:?} | total: {:?}", timing_info.parsing, timing_info.task_1, timing_info.task_2, total)
+                    let total = timing_info.task_1 + timing_info.task_2;
+                    println!("task 1: {:?} | task 2: {:?} | total: {:?}", timing_info.task_1, timing_info.task_2, total)
                 },
             }
         }
-    }
+    };
+
+    (day: $day:expr, test_input: $test_input:expr, $($tt:tt)*) => {
+        aoc_main!(day: $day, test_input: $test_input, test_input_2: $test_input, $($tt)*);
+    };
 }
 
 pub trait Frequencies<FreqType: PrimInt>: Iterator {
@@ -366,7 +336,13 @@ impl AsciiStrTools for AsciiStr {
             return false;
         }
 
-        &self[..s.len()] == s
+        for i in 0..s.len() {
+            if self[i] != s[i] {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
