@@ -249,11 +249,11 @@ impl Iterator for Neighborhood {
 }
 
 pub trait FromLines<S: Sized> {
-    fn from_2d_text(raw_input: &str) -> Result<S>;
+    fn from_2d_text_digits(raw_input: &str) -> Result<S>;
 }
 
 impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
-    fn from_2d_text(raw_input: &str) -> Result<Array2<T>> {
+    fn from_2d_text_digits(raw_input: &str) -> Result<Array2<T>> {
         let cols = raw_input
             .lines()
             .next()
@@ -272,6 +272,25 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
             .collect();
 
         Ok(Array2::from_shape_vec((rows, cols), data?)?)
+    }
+}
+
+pub trait FromLines2<S: Sized> {
+    fn from_2d_text(raw_input: &str) -> Result<S>;
+}
+
+impl FromLines2<Array2<char>> for Array2<char> {
+    fn from_2d_text(raw_input: &str) -> Result<Array2<char>> {
+        let cols = raw_input
+            .lines()
+            .next()
+            .map(|l| l.len())
+            .ok_or_else(|| anyhow!("Empty input"))?;
+        let rows = raw_input.lines().count();
+
+        let data: Vec<char> = raw_input.replace('\n', "").chars().collect();
+
+        Ok(Array2::from_shape_vec((rows, cols), data)?)
     }
 }
 
