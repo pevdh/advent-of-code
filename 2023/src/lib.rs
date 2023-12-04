@@ -7,7 +7,7 @@ use std::ops::Range;
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use ascii::{AsciiChar, AsciiStr};
+use ascii::{AsAsciiStr, AsciiChar, AsciiStr, AsciiString};
 use ndarray::{ArrayBase, Ix2, RawData};
 use nom::error::{convert_error, VerboseError};
 use nom::{Err, IResult};
@@ -295,16 +295,16 @@ impl FromLines2<Array2<char>> for Array2<char> {
 }
 
 pub struct StringColumns<'a> {
-    lines: Vec<&'a str>,
+    lines: Vec<&'a AsciiStr>,
     column_index: usize,
     longest_line_len: usize,
-    scratch_space: String,
+    scratch_space: AsciiString,
 }
 
 impl<'a> Iterator for StringColumns<'a> {
-    type Item = String;
+    type Item = AsciiString;
 
-    fn next(&mut self) -> Option<String> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.column_index >= self.longest_line_len {
             return None;
         }
@@ -312,10 +312,10 @@ impl<'a> Iterator for StringColumns<'a> {
         self.scratch_space.clear();
 
         for line in &self.lines {
-            if let Some(c) = line.chars().nth(self.column_index) {
-                self.scratch_space.push(c);
+            if let Some(ch) = line.chars().nth(self.column_index) {
+                self.scratch_space.push(ch);
             } else {
-                self.scratch_space.push('\0');
+                self.scratch_space.push(AsciiChar::Null);
             }
         }
 
@@ -326,19 +326,19 @@ impl<'a> Iterator for StringColumns<'a> {
 }
 
 pub trait StringTools<'a> {
-    fn columns(&self) -> StringColumns<'a>;
+    fn columns(&'a self) -> StringColumns<'a>;
 }
 
 impl<'a> StringTools<'a> for &'a str {
-    fn columns(&self) -> StringColumns<'a> {
-        let lines = self.lines().collect::<Vec<_>>();
+    fn columns(&'a self) -> StringColumns<'a> {
+        let lines = self.as_ascii_str().unwrap().lines().collect::<Vec<_>>();
         let column_index = 0;
 
         let longest_line_len = lines.iter().map(|line| line.len()).max().unwrap_or(0);
 
         StringColumns {
             lines,
-            scratch_space: String::with_capacity(longest_line_len),
+            scratch_space: AsciiString::with_capacity(longest_line_len),
             column_index,
             longest_line_len,
         }
