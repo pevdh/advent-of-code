@@ -1,5 +1,3 @@
-use std::iter::repeat;
-
 use aoc2023::*;
 
 aoc_main!(
@@ -18,59 +16,57 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<i64> {
-    let mut score = 0;
+    let total_points = input
+        .lines()
+        .map(parse_numbers)
+        .fold(0, |acc, (winning_numbers, our_numbers)| {
+            let win_count = winning_numbers.intersection(&our_numbers).count() as i64;
 
-    for line in input.lines() {
-        let (_, cards) = line.split_once(": ").unwrap();
-        let (winning_numbers, our_numbers) = cards.split_once(" | ").unwrap();
+            acc + win_count.signum() * 2i64.pow((win_count - 1) as u32)
+        });
 
-        let winning_numbers: HashSet<i64> = winning_numbers
-            .split_whitespace()
-            .map(|d| d.parse::<i64>().unwrap())
-            .collect();
-        let our_numbers: HashSet<i64> = our_numbers
-            .split_whitespace()
-            .map(|d| d.parse::<i64>().unwrap())
-            .collect();
+    Ok(total_points)
+}
 
-        let our_winning_numbers_count = winning_numbers.intersection(&our_numbers).count() as u32;
-        if our_winning_numbers_count == 0 {
-            continue;
-        }
+fn parse_numbers(line: &str) -> (HashSet<i64>, HashSet<i64>) {
+    let (_, cards) = line.split_once(": ").unwrap();
+    let (winning_numbers, our_numbers) = cards.split_once(" | ").unwrap();
 
-        score += 2i64.pow(our_winning_numbers_count - 1);
-    }
+    let winning_numbers: HashSet<i64> = winning_numbers
+        .split_whitespace()
+        .map(|d| d.parse::<i64>().unwrap())
+        .collect();
 
-    Ok(score)
+    let our_numbers: HashSet<i64> = our_numbers
+        .split_whitespace()
+        .map(|d| d.parse::<i64>().unwrap())
+        .collect();
+
+    (winning_numbers, our_numbers)
 }
 
 fn task_2(input: &str) -> Result<i64> {
-    let mut copies = Vec::from_iter(repeat(1).take(input.lines().count()));
+    let win_counts = input
+        .lines()
+        .map(parse_numbers)
+        .map(|(winning_numbers, our_numbers)| winning_numbers.intersection(&our_numbers).count());
 
-    for (card_idx, line) in input.lines().enumerate() {
-        let (_, cards) = line.split_once(": ").unwrap();
-        let (winning_numbers, our_numbers) = cards.split_once(" | ").unwrap();
+    let card_counts = vec![1; input.lines().count()];
 
-        let winning_numbers: HashSet<i64> = winning_numbers
-            .split_whitespace()
-            .map(|d| d.parse::<i64>().unwrap())
-            .collect();
+    let total_scratchcards = win_counts
+        .enumerate()
+        .scan(card_counts, |card_counts, (card_idx, win_count)| {
+            let current_card_count = card_counts[card_idx];
 
-        let our_numbers: HashSet<i64> = our_numbers
-            .split_whitespace()
-            .map(|d| d.parse::<i64>().unwrap())
-            .collect();
+            let range_to_update = (card_idx + 1)..=(card_idx + win_count);
 
-        let our_winning_numbers_count = winning_numbers.intersection(&our_numbers).count();
+            card_counts[range_to_update]
+                .iter_mut()
+                .for_each(|c| *c += current_card_count);
 
-        for i in 1usize..=our_winning_numbers_count {
-            if card_idx + i >= copies.len() {
-                break;
-            }
+            Some(current_card_count)
+        })
+        .sum();
 
-            copies[card_idx + i] += copies[card_idx];
-        }
-    }
-
-    Ok(copies.iter().sum())
+    Ok(total_scratchcards)
 }
