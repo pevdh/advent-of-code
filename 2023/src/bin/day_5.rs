@@ -45,13 +45,13 @@ aoc_main!(
 fn task_1(input: &str) -> Result<u64> {
     let mut parts = input.split("\n\n");
 
-    let seeds_part = parts.next().unwrap();
+    let seeds_part = parts.next().ok_or_parse_error()?;
     let seeds: Vec<u64> = seeds_part["seeds: ".len()..]
         .split_whitespace()
-        .map(|d| d.parse::<u64>().unwrap())
-        .collect();
+        .map(|d| d.parse::<u64>().wrap_err("while parsing"))
+        .collect::<Result<Vec<_>>>()?;
 
-    let maps: Vec<Map> = parse_maps(&parts.collect::<Vec<&str>>());
+    let maps: Vec<Map> = parse_maps(&parts.collect::<Vec<&str>>())?;
 
     let lowest_location = seeds
         .iter()
@@ -61,7 +61,7 @@ fn task_1(input: &str) -> Result<u64> {
             location_number
         })
         .min()
-        .unwrap();
+        .ok_or(eyre!("no solution found"))?;
 
     Ok(lowest_location)
 }
@@ -69,14 +69,14 @@ fn task_1(input: &str) -> Result<u64> {
 fn task_2(input: &str) -> Result<u64> {
     let mut parts = input.split("\n\n");
 
-    let seeds_part = parts.next().unwrap();
+    let seeds_part = parts.next().ok_or_parse_error()?;
     let seeds: Vec<(u64, u64)> = seeds_part["seeds: ".len()..]
         .split_whitespace()
         .map(|d| d.parse::<u64>().unwrap())
         .tuples()
         .collect();
 
-    let maps = parse_maps(&parts.collect::<Vec<&str>>());
+    let maps = parse_maps(&parts.collect::<Vec<&str>>())?;
 
     let location_number_ranges: Vec<(u64, u64)> = maps
         .iter()
@@ -86,26 +86,26 @@ fn task_2(input: &str) -> Result<u64> {
         .iter()
         .map(|&(start, _length)| start)
         .min()
-        .unwrap();
+        .ok_or(eyre!("no solution found"))?;
 
     Ok(min_location)
 }
 
-fn parse_maps(map_parts: &[&str]) -> Vec<Map> {
+fn parse_maps(map_parts: &[&str]) -> Result<Vec<Map>> {
     let mut maps = vec![];
 
     for map_part in map_parts {
         let mut map_lines = map_part.lines();
 
-        let _map_name_line = map_lines.next().unwrap();
+        let _map_name_line = map_lines.next().ok_or_parse_error();
 
         let mut map_values = vec![];
         for line in map_lines {
             let mut s = line.split_whitespace();
 
-            let dst = s.next().unwrap().parse::<u64>().unwrap();
-            let src = s.next().unwrap().parse::<u64>().unwrap();
-            let range = s.next().unwrap().parse::<u64>().unwrap();
+            let dst = s.next().ok_or_parse_error()?.parse::<u64>()?;
+            let src = s.next().ok_or_parse_error()?.parse::<u64>()?;
+            let range = s.next().ok_or_parse_error()?.parse::<u64>()?;
 
             map_values.push((src, dst, range));
         }
@@ -113,7 +113,7 @@ fn parse_maps(map_parts: &[&str]) -> Vec<Map> {
         maps.push(Map::from_vec(map_values));
     }
 
-    maps
+    Ok(maps)
 }
 
 struct Map(Vec</* src dst length */ (u64, u64, u64)>);

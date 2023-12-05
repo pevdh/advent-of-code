@@ -35,9 +35,9 @@ fn task_1(input: &str) -> Result<i64> {
                 '0'..='9' => {
                     if in_number {
                         number =
-                            number * 10 + ch.to_digit(10).ok_or(anyhow!("Char is not a digit"))?;
+                            number * 10 + ch.to_digit(10).ok_or(eyre!("Char is not a digit"))?;
                     } else {
-                        number = ch.to_digit(10).ok_or(anyhow!("Char is not a digit"))?;
+                        number = ch.to_digit(10).ok_or(eyre!("Char is not a digit"))?;
                         in_number = true;
                     }
                 }
@@ -86,9 +86,9 @@ fn task_2(input: &str) -> Result<u64> {
                 '0'..='9' => {
                     if in_number {
                         number =
-                            number * 10 + ch.to_digit(10).ok_or(anyhow!("Char is not a digit"))?;
+                            number * 10 + ch.to_digit(10).ok_or(eyre!("Char is not a digit"))?;
                     } else {
-                        number = ch.to_digit(10).ok_or(anyhow!("Char is not a digit"))?;
+                        number = ch.to_digit(10).ok_or(eyre!("Char is not a digit"))?;
                         in_number = true;
                     }
                 }

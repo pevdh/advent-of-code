@@ -6,7 +6,6 @@ use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::time::{Duration, Instant};
 
-use anyhow::Context;
 use ascii::{AsAsciiStr, AsciiChar, AsciiStr, AsciiString};
 use ndarray::{ArrayBase, Ix2, RawData};
 use nom::error::{convert_error, VerboseError};
@@ -19,11 +18,12 @@ use rustc_hash::{FxHashMap, FxHashSet};
 pub type HashSet<V> = FxHashSet<V>;
 pub type HashMap<K, V> = FxHashMap<K, V>;
 
-pub use anyhow::anyhow;
+pub use eyre::eyre;
+pub use eyre::Context;
 pub use itertools::Itertools;
 pub use ndarray::{Array2, ArrayView2};
 
-pub type Result<T, E = anyhow::Error> = anyhow::Result<T, E>;
+pub type Result<T, E = eyre::Error> = eyre::Result<T, E>;
 
 pub fn nom_parse<'a, O>(
     input: &'a str,
@@ -32,9 +32,9 @@ pub fn nom_parse<'a, O>(
     let nom_parse_result = parser(input);
 
     nom_parse_result.map(|(_i, o)| o).map_err(|e| match e {
-        Err::Error(e) => anyhow!("Parse errors:\n{}", convert_error(input, e)),
-        Err::Incomplete(_e) => anyhow!("Parse error: incomplete input"),
-        Err::Failure(_e) => anyhow!("Parse error: failure"),
+        Err::Error(e) => eyre!("Parse errors:\n{}", convert_error(input, e)),
+        Err::Incomplete(_e) => eyre!("Parse error: incomplete input"),
+        Err::Failure(_e) => eyre!("Parse error: failure"),
     })
 }
 
@@ -64,7 +64,7 @@ where
     Task2Fn: Fn(&str) -> Result<Task2Output>,
 {
     let task1_test_output = (solution.task_1)(solution.test_input)
-        .with_context(|| "Error while running task 1 on test input")?;
+        .wrap_err_with(|| "while running task 1 on test input")?;
 
     if task1_test_output == solution.expected_1 {
         print!("[TEST OK] ");
@@ -78,12 +78,12 @@ where
 
     let task1_start = Instant::now();
     let task1_output =
-        (solution.task_1)(input).with_context(|| "Error while running task 1 on input")?;
+        (solution.task_1)(input).wrap_err_with(|| "while running task 1 on input")?;
     let task1_time = task1_start.elapsed();
     println!("Task 1: {}", task1_output);
 
     let task2_test_output = (solution.task_2)(solution.test_input_2)
-        .with_context(|| "Error while running task 2 on test input")?;
+        .wrap_err_with(|| "while running task 2 on test input")?;
 
     if task2_test_output == solution.expected_2 {
         print!("[TEST OK] ");
@@ -96,7 +96,8 @@ where
     io::stdout().flush().unwrap();
 
     let task2_start = Instant::now();
-    let task2_output = (solution.task_2)(input).with_context(|| "While running task 2 on input")?;
+    let task2_output =
+        (solution.task_2)(input).wrap_err_with(|| "while running task 2 on input")?;
     let task2_time = task2_start.elapsed();
     println!("Task 2: {}", task2_output);
 
@@ -125,9 +126,19 @@ macro_rules! aoc_main {
 
             use std::time::Instant;
             let start = Instant::now();
+            color_eyre::install().unwrap();
             match run(&input, &solution) {
                 Err(e) => {
-                    eprintln!("{:?}", e);
+                    eprintln!("\n\nError encountered - rerunning with backtrace enabled\n");
+                    std::env::set_var("RUST_BACKTRACE", "full");
+                    let err = if let Err(e) = run(&input, &solution) {
+                        e
+                    } else {
+                        eyre!("Solution did not error when we tried to capture a backtrace")
+                    };
+
+                    eprintln!("\n\nCaptured error with backtrace:");
+                    eprintln!("{:?}", err);
                 },
                 Ok(timing_info) => {
                     let total = timing_info.task_1 + timing_info.task_2;
@@ -258,7 +269,7 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
             .lines()
             .next()
             .map(|l| l.len())
-            .ok_or_else(|| anyhow!("Empty input"))?;
+            .ok_or_else(|| eyre!("Empty input"))?;
         let rows = raw_input.lines().count();
 
         let data: Result<Vec<T>> = raw_input
@@ -267,7 +278,7 @@ impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
             .map(|c| {
                 c.to_digit(10)
                     .map(|d| T::from(d).unwrap())
-                    .ok_or_else(|| anyhow!("Unable to convert char to digit"))
+                    .ok_or_else(|| eyre!("Unable to convert char to digit"))
             })
             .collect();
 
@@ -285,7 +296,7 @@ impl FromLines2<Array2<char>> for Array2<char> {
             .lines()
             .next()
             .map(|l| l.len())
-            .ok_or_else(|| anyhow!("Empty input"))?;
+            .ok_or_else(|| eyre!("Empty input"))?;
         let rows = raw_input.lines().count();
 
         let data: Vec<char> = raw_input.replace('\n', "").chars().collect();
@@ -477,5 +488,15 @@ where
         self.current.1 = ((self.current.1 as i32) + self.step.1) as usize;
 
         self.view.get((self.current.0, self.current.1)).copied()
+    }
+}
+
+pub trait OptionTools<T> {
+    fn ok_or_parse_error(self) -> Result<T>;
+}
+
+impl<T> OptionTools<T> for Option<T> {
+    fn ok_or_parse_error(self) -> Result<T> {
+        self.ok_or(eyre!("Parse error"))
     }
 }
