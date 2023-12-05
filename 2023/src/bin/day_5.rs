@@ -1,3 +1,5 @@
+use std::{cmp::Reverse, collections::BinaryHeap};
+
 use aoc2023::*;
 
 aoc_main!(
@@ -51,32 +53,10 @@ fn task_1(input: &str) -> Result<u64> {
         .map(|d| d.parse::<u64>().unwrap())
         .collect();
 
-    let mut maps: HashMap<(&str, &str), Vec<(u64, u64, u64)>> = HashMap::default();
-
-    for map_part in parts {
-        let mut map_lines = map_part.lines();
-
-        let map_name_line = map_lines.next().unwrap();
-        let (from, to) = map_name_line
-            .trim_end_matches(" map:")
-            .split_once("-to-")
-            .unwrap();
-
-        let mut map_values = vec![];
-        for line in map_lines {
-            let mut s = line.split_whitespace();
-
-            let dst = s.next().unwrap().parse::<u64>().unwrap();
-            let src = s.next().unwrap().parse::<u64>().unwrap();
-            let range = s.next().unwrap().parse::<u64>().unwrap();
-
-            map_values.push((dst, src, range));
-        }
-
-        maps.insert((from, to), map_values);
-    }
+    let maps = parse_maps(&parts.collect::<Vec<&str>>());
 
     let path = vec![
+        "seed",
         "soil",
         "fertilizer",
         "water",
@@ -89,22 +69,11 @@ fn task_1(input: &str) -> Result<u64> {
     let mut lowest_location = u64::MAX;
 
     for seed in seeds {
-        let mut current_step = "seed";
         let mut current_value = seed;
+        for (from, to) in path.iter().tuple_windows() {
+            let map = maps.get(&(from, to)).unwrap();
 
-        for next_step in &path {
-            let map = maps.get(&(current_step, next_step)).unwrap();
-
-            let mut mapped_value = current_value;
-            for &(dst, src, range) in map {
-                if current_value >= src && current_value < (src + range) {
-                    mapped_value = dst + (current_value - src);
-                    break;
-                }
-            }
-
-            current_value = mapped_value;
-            current_step = next_step;
+            current_value = map.convert_value(current_value);
         }
 
         if current_value < lowest_location {
@@ -115,19 +84,10 @@ fn task_1(input: &str) -> Result<u64> {
     Ok(lowest_location)
 }
 
-fn task_2(input: &str) -> Result<u64> {
-    let mut parts = input.split("\n\n");
+fn parse_maps<'a>(map_parts: &[&'a str]) -> HashMap<(&'a str, &'a str), Map> {
+    let mut maps: HashMap<(&str, &str), Map> = HashMap::default();
 
-    let seeds_part = parts.next().unwrap();
-    let seeds: Vec<(u64, u64)> = seeds_part["seeds: ".len()..]
-        .split_whitespace()
-        .map(|d| d.parse::<u64>().unwrap())
-        .tuples()
-        .collect();
-
-    let mut maps: HashMap<(&str, &str), Vec<(u64, u64, u64)>> = HashMap::default();
-
-    for map_part in parts {
+    for map_part in map_parts {
         let mut map_lines = map_part.lines();
 
         let map_name_line = map_lines.next().unwrap();
@@ -144,13 +104,29 @@ fn task_2(input: &str) -> Result<u64> {
             let src = s.next().unwrap().parse::<u64>().unwrap();
             let range = s.next().unwrap().parse::<u64>().unwrap();
 
-            map_values.push((dst, src, range));
+            map_values.push((src, dst, range));
         }
 
-        maps.insert((from, to), map_values);
+        maps.insert((from, to), Map::from_vec(map_values));
     }
 
+    maps
+}
+
+fn task_2(input: &str) -> Result<u64> {
+    let mut parts = input.split("\n\n");
+
+    let seeds_part = parts.next().unwrap();
+    let seeds: Vec<(u64, u64)> = seeds_part["seeds: ".len()..]
+        .split_whitespace()
+        .map(|d| d.parse::<u64>().unwrap())
+        .tuples()
+        .collect();
+
+    let maps = parse_maps(&parts.collect::<Vec<&str>>());
+
     let path = vec![
+        "seed",
         "soil",
         "fertilizer",
         "water",
@@ -162,22 +138,49 @@ fn task_2(input: &str) -> Result<u64> {
 
     let mut current_values = seeds.clone();
 
-    let mut current_step = "seed";
-    for next_step in &path {
-        let map = maps.get(&(current_step, next_step)).unwrap();
+    for (from, to) in path.iter().tuple_windows() {
+        let map = maps.get(&(from, to)).unwrap();
 
-        let mut next_values = vec![];
+        current_values = map.convert_ranges(&current_values);
+    }
+
+    Ok(current_values.iter().map(|&(s, _)| s).min().unwrap())
+}
+
+struct Map(Vec</* dst src length */ (u64, u64, u64)>);
+
+impl Map {
+    fn from_vec(mut v: Vec<(u64, u64, u64)>) -> Map {
+        Map(v)
+    }
+
+    fn convert_value(&self, value: u64) -> u64 {
+        let mut new_value = value;
+        for &(src, dst, range) in self.0.iter() {
+            if value >= src && value < (src + range) {
+                new_value = dst + (value - src);
+                break;
+            }
+        }
+
+        new_value
+    }
+
+    fn convert_ranges(&self, values: &[(u64, u64)]) -> Vec<(u64, u64)> {
+        let mut current_values = Vec::from_iter(values.iter().cloned());
+        let mut next_values = Vec::with_capacity(values.len());
 
         while let Some((current_start, current_num)) = current_values.pop() {
-            let mut found = false;
-            for &(dst, src, range) in map {
+            next_values.push((current_start, current_num));
+            let len = next_values.len();
+            
+            for &(src, dst, range) in self.0.iter() {
                 let start_in_range = current_start >= src && current_start < (src + range);
                 let end_in_range = (current_start + current_num) >= src
                     && (current_start + current_num) < (src + range);
 
                 if start_in_range && end_in_range {
-                    next_values.push((dst + (current_start - src), current_num));
-                    found = true;
+                    next_values[len - 1] = (dst + (current_start - src), current_num);
                     break;
                 } else if start_in_range {
                     // Split :(
@@ -188,23 +191,14 @@ fn task_2(input: &str) -> Result<u64> {
                     let right_start = src + range;
 
                     let left_mapped_start = dst + (left_start - src);
-                    next_values.push((left_mapped_start, left_num));
+                    next_values[len - 1] = (left_mapped_start, left_num);
 
                     current_values.push((right_start, right_num));
-
-                    found = true;
                     break;
                 }
             }
-
-            if !found {
-                next_values.push((current_start, current_num));
-            }
         }
 
-        current_values = next_values;
-        current_step = next_step;
+        next_values
     }
-
-    Ok(current_values.iter().map(|&(s, _)| s).min().unwrap())
 }
