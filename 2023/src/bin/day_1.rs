@@ -1,6 +1,6 @@
-use anyhow::Context;
 use aoc2023::*;
 use ascii::{AsAsciiStr, IntoAsciiString};
+use eyre::Context;
 
 aoc_main!(
     day: 1,
@@ -44,7 +44,7 @@ fn task_1(input: &str) -> Result<u32> {
 fn task_2(input: &str) -> Result<u32> {
     let input = input
         .as_ascii_str()
-        .with_context(|| "Input contains non-ASCII characters.")?;
+        .wrap_err_with(|| "Input contains non-ASCII characters.")?;
 
     let spelled_out_digits = [
         "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
