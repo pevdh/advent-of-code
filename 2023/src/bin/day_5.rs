@@ -46,15 +46,21 @@ fn task_1(input: &str) -> Result<u64> {
     let mut parts = input.split("\n\n");
 
     let seeds_part = parts.next().unwrap();
-    let seeds: Vec<u64> = seeds_part["seeds: ".len()..].split_whitespace().map(|d| d.parse::<u64>().unwrap()).collect();
-    
+    let seeds: Vec<u64> = seeds_part["seeds: ".len()..]
+        .split_whitespace()
+        .map(|d| d.parse::<u64>().unwrap())
+        .collect();
+
     let mut maps: HashMap<(&str, &str), Vec<(u64, u64, u64)>> = HashMap::default();
 
     for map_part in parts {
         let mut map_lines = map_part.lines();
 
         let map_name_line = map_lines.next().unwrap();
-        let (from, to) = map_name_line.trim_end_matches(" map:").split_once("-to-").unwrap();
+        let (from, to) = map_name_line
+            .trim_end_matches(" map:")
+            .split_once("-to-")
+            .unwrap();
 
         let mut map_values = vec![];
         for line in map_lines {
@@ -71,13 +77,13 @@ fn task_1(input: &str) -> Result<u64> {
     }
 
     let path = vec![
-        "soil", 
-        "fertilizer", 
-        "water", 
-        "light", 
-        "temperature", 
-        "humidity", 
-        "location"
+        "soil",
+        "fertilizer",
+        "water",
+        "light",
+        "temperature",
+        "humidity",
+        "location",
     ];
 
     let mut lowest_location = u64::MAX;
@@ -88,7 +94,7 @@ fn task_1(input: &str) -> Result<u64> {
 
         for next_step in &path {
             let map = maps.get(&(current_step, next_step)).unwrap();
-    
+
             let mut mapped_value = current_value;
             for &(dst, src, range) in map {
                 if current_value >= src && current_value < (src + range) {
@@ -109,24 +115,26 @@ fn task_1(input: &str) -> Result<u64> {
     Ok(lowest_location)
 }
 
-
-
 fn task_2(input: &str) -> Result<u64> {
     let mut parts = input.split("\n\n");
 
     let seeds_part = parts.next().unwrap();
-    let seeds: Vec<(u64, u64)> = seeds_part["seeds: ".len()..].split_whitespace()
+    let seeds: Vec<(u64, u64)> = seeds_part["seeds: ".len()..]
+        .split_whitespace()
         .map(|d| d.parse::<u64>().unwrap())
         .tuples()
         .collect();
-    
+
     let mut maps: HashMap<(&str, &str), Vec<(u64, u64, u64)>> = HashMap::default();
 
     for map_part in parts {
         let mut map_lines = map_part.lines();
 
         let map_name_line = map_lines.next().unwrap();
-        let (from, to) = map_name_line.trim_end_matches(" map:").split_once("-to-").unwrap();
+        let (from, to) = map_name_line
+            .trim_end_matches(" map:")
+            .split_once("-to-")
+            .unwrap();
 
         let mut map_values = vec![];
         for line in map_lines {
@@ -143,13 +151,13 @@ fn task_2(input: &str) -> Result<u64> {
     }
 
     let path = vec![
-        "soil", 
-        "fertilizer", 
-        "water", 
-        "light", 
-        "temperature", 
-        "humidity", 
-        "location"
+        "soil",
+        "fertilizer",
+        "water",
+        "light",
+        "temperature",
+        "humidity",
+        "location",
     ];
 
     let mut current_values = seeds.clone();
@@ -164,7 +172,8 @@ fn task_2(input: &str) -> Result<u64> {
             let mut found = false;
             for &(dst, src, range) in map {
                 let start_in_range = current_start >= src && current_start < (src + range);
-                let end_in_range = (current_start + current_num) >= src && (current_start + current_num) < (src + range);
+                let end_in_range = (current_start + current_num) >= src
+                    && (current_start + current_num) < (src + range);
 
                 if start_in_range && end_in_range {
                     next_values.push((dst + (current_start - src), current_num));
@@ -199,4 +208,3 @@ fn task_2(input: &str) -> Result<u64> {
 
     Ok(current_values.iter().map(|&(s, _)| s).min().unwrap())
 }
-

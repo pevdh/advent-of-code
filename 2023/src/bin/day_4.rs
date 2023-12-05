@@ -16,14 +16,15 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<i64> {
-    let total_points = input
-        .lines()
-        .map(parse_numbers)
-        .fold(0, |acc, (winning_numbers, our_numbers)| {
-            let win_count = winning_numbers.intersection(&our_numbers).count() as i64;
+    let total_points =
+        input
+            .lines()
+            .map(parse_numbers)
+            .fold(0, |acc, (winning_numbers, our_numbers)| {
+                let win_count = winning_numbers.intersection(&our_numbers).count() as i64;
 
-            acc + win_count.signum() * 2i64.pow((win_count - 1) as u32)
-        });
+                acc + win_count.signum() * 2i64.pow((win_count - 1) as u32)
+            });
 
     Ok(total_points)
 }
