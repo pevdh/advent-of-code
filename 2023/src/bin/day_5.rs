@@ -1,5 +1,3 @@
-use std::{cmp::Reverse, collections::BinaryHeap};
-
 use aoc2023::*;
 
 aoc_main!(
@@ -53,64 +51,19 @@ fn task_1(input: &str) -> Result<u64> {
         .map(|d| d.parse::<u64>().unwrap())
         .collect();
 
-    let maps = parse_maps(&parts.collect::<Vec<&str>>());
+    let maps: Vec<Map> = parse_maps(&parts.collect::<Vec<&str>>());
 
-    let path = vec![
-        "seed",
-        "soil",
-        "fertilizer",
-        "water",
-        "light",
-        "temperature",
-        "humidity",
-        "location",
-    ];
+    let lowest_location = seeds
+        .iter()
+        .map(|&seed| {
+            let location_number = maps.iter().fold(seed, |current, map| map.convert(current));
 
-    let mut lowest_location = u64::MAX;
-
-    for seed in seeds {
-        let mut current_value = seed;
-        for (from, to) in path.iter().tuple_windows() {
-            let map = maps.get(&(from, to)).unwrap();
-
-            current_value = map.convert_value(current_value);
-        }
-
-        if current_value < lowest_location {
-            lowest_location = current_value;
-        }
-    }
+            location_number
+        })
+        .min()
+        .unwrap();
 
     Ok(lowest_location)
-}
-
-fn parse_maps<'a>(map_parts: &[&'a str]) -> HashMap<(&'a str, &'a str), Map> {
-    let mut maps: HashMap<(&str, &str), Map> = HashMap::default();
-
-    for map_part in map_parts {
-        let mut map_lines = map_part.lines();
-
-        let map_name_line = map_lines.next().unwrap();
-        let (from, to) = map_name_line
-            .trim_end_matches(" map:")
-            .split_once("-to-")
-            .unwrap();
-
-        let mut map_values = vec![];
-        for line in map_lines {
-            let mut s = line.split_whitespace();
-
-            let dst = s.next().unwrap().parse::<u64>().unwrap();
-            let src = s.next().unwrap().parse::<u64>().unwrap();
-            let range = s.next().unwrap().parse::<u64>().unwrap();
-
-            map_values.push((src, dst, range));
-        }
-
-        maps.insert((from, to), Map::from_vec(map_values));
-    }
-
-    maps
 }
 
 fn task_2(input: &str) -> Result<u64> {
@@ -125,39 +78,58 @@ fn task_2(input: &str) -> Result<u64> {
 
     let maps = parse_maps(&parts.collect::<Vec<&str>>());
 
-    let path = vec![
-        "seed",
-        "soil",
-        "fertilizer",
-        "water",
-        "light",
-        "temperature",
-        "humidity",
-        "location",
-    ];
+    let location_number_ranges: Vec<(u64, u64)> = maps
+        .iter()
+        .fold(seeds, |ranges, map| map.convert_ranges(&ranges));
 
-    let mut current_values = seeds.clone();
+    let min_location = location_number_ranges
+        .iter()
+        .map(|&(start, _length)| start)
+        .min()
+        .unwrap();
 
-    for (from, to) in path.iter().tuple_windows() {
-        let map = maps.get(&(from, to)).unwrap();
-
-        current_values = map.convert_ranges(&current_values);
-    }
-
-    Ok(current_values.iter().map(|&(s, _)| s).min().unwrap())
+    Ok(min_location)
 }
 
-struct Map(Vec</* dst src length */ (u64, u64, u64)>);
+fn parse_maps(map_parts: &[&str]) -> Vec<Map> {
+    let mut maps = vec![];
+
+    for map_part in map_parts {
+        let mut map_lines = map_part.lines();
+
+        let _map_name_line = map_lines.next().unwrap();
+
+        let mut map_values = vec![];
+        for line in map_lines {
+            let mut s = line.split_whitespace();
+
+            let dst = s.next().unwrap().parse::<u64>().unwrap();
+            let src = s.next().unwrap().parse::<u64>().unwrap();
+            let range = s.next().unwrap().parse::<u64>().unwrap();
+
+            map_values.push((src, dst, range));
+        }
+
+        maps.push(Map::from_vec(map_values));
+    }
+
+    maps
+}
+
+struct Map(Vec</* src dst length */ (u64, u64, u64)>);
 
 impl Map {
     fn from_vec(mut v: Vec<(u64, u64, u64)>) -> Map {
+        // important: otherwise algorithm in convert_ranges does not work.
+        v.sort();
+
         Map(v)
     }
 
-    fn convert_value(&self, value: u64) -> u64 {
+    fn convert(&self, value: u64) -> u64 {
         let mut new_value = value;
-        for &(src, dst, range) in self.0.iter() {
-            if value >= src && value < (src + range) {
+        for &(src, dst, length) in self.0.iter() {
+            if value >= src && value < (src + length) {
                 new_value = dst + (value - src);
                 break;
             }
@@ -166,39 +138,42 @@ impl Map {
         new_value
     }
 
-    fn convert_ranges(&self, values: &[(u64, u64)]) -> Vec<(u64, u64)> {
-        let mut current_values = Vec::from_iter(values.iter().cloned());
-        let mut next_values = Vec::with_capacity(values.len());
+    fn convert_ranges(&self, ranges: &[(u64, u64)]) -> Vec<(u64, u64)> {
+        let mut mapped_ranges = Vec::with_capacity(ranges.len());
+        let mut current_ranges = Vec::from_iter(ranges.iter().cloned());
+        let mut new_ranges = Vec::new();
 
-        while let Some((current_start, current_num)) = current_values.pop() {
-            next_values.push((current_start, current_num));
-            let len = next_values.len();
-            
-            for &(src, dst, range) in self.0.iter() {
-                let start_in_range = current_start >= src && current_start < (src + range);
-                let end_in_range = (current_start + current_num) >= src
-                    && (current_start + current_num) < (src + range);
+        for &(src, dst, length) in self.0.iter() {
+            current_ranges.extend(new_ranges.iter());
+            new_ranges.clear();
+
+            while let Some((range_start, range_length)) = current_ranges.pop() {
+                let start_in_range = range_start >= src && range_start < (src + length);
+                let end_in_range = (range_start + range_length) >= src
+                    && (range_start + range_length) < (src + length);
 
                 if start_in_range && end_in_range {
-                    next_values[len - 1] = (dst + (current_start - src), current_num);
-                    break;
+                    mapped_ranges.push((dst + (range_start - src), range_length));
                 } else if start_in_range {
                     // Split :(
-                    let left_num = src + range - current_start;
-                    let right_num = current_num - left_num;
+                    let left_num = src + length - range_start;
+                    let right_num = range_length - left_num;
 
-                    let left_start = current_start;
-                    let right_start = src + range;
+                    let left_start = range_start;
+                    let right_start = src + length;
 
                     let left_mapped_start = dst + (left_start - src);
-                    next_values[len - 1] = (left_mapped_start, left_num);
+                    mapped_ranges.push((left_mapped_start, left_num));
 
-                    current_values.push((right_start, right_num));
-                    break;
+                    new_ranges.push((right_start, right_num));
+                } else {
+                    new_ranges.push((range_start, range_length));
                 }
             }
         }
 
-        next_values
+        mapped_ranges.extend(new_ranges.iter());
+
+        mapped_ranges
     }
 }
