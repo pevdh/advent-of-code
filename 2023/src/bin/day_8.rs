@@ -74,35 +74,50 @@ fn task_2(input: &str) -> Result<u64> {
         })
         .collect();
 
+    let node_to_idx: HashMap<&str, usize> = nodes
+        .keys()
+        .enumerate()
+        .map(|(idx, node)| (node.as_str(), idx))
+        .collect();
+
+    let idx_to_node: HashMap<usize, &str> = node_to_idx.iter().map(|(&n, &i)| (i, n)).collect();
+
     let mut current_nodes: Vec<State> = nodes
         .keys()
         .filter(|node| node.ends_with('A'))
         .map(|s| State {
-            node: s.as_str(),
+            node: *node_to_idx.get(s.as_str()).unwrap(),
             steps: 0,
             next_instr_idx: 0,
         })
         .collect();
 
-    let mut jump_table: JumpTable = HashMap::default();
+    let mut jump_table: Vec<Option<Jump>> = vec![None; node_to_idx.len()];
+
+    let mut largest_number_of_steps = 0;
 
     loop {
-        let largest_number_of_steps = current_nodes.iter().map(|s| s.steps).max().unwrap();
-
         let mut all_same_step = true;
         for i in 0..current_nodes.len() {
             if largest_number_of_steps != 0 && current_nodes[i].steps == largest_number_of_steps {
                 continue;
             }
 
-            if let Some(jump) = jump_table.get(current_nodes[i].node) {
+            if let Some(jump) = &jump_table[current_nodes[i].node] {
                 current_nodes[i] = State {
                     steps: current_nodes[i].steps + jump.steps_to_exit,
                     next_instr_idx: jump.next_instr_idx,
                     node: jump.exit_node,
                 };
             } else {
-                let jump = find_jump(&current_nodes[i], &nodes, &instructions);
+                let node_str = idx_to_node.get(&current_nodes[i].node).unwrap();
+                let jump = find_jump(
+                    node_str,
+                    current_nodes[i].next_instr_idx,
+                    &nodes,
+                    &node_to_idx,
+                    &instructions,
+                );
 
                 let from = current_nodes[i].node;
                 current_nodes[i] = State {
@@ -111,28 +126,27 @@ fn task_2(input: &str) -> Result<u64> {
                     node: jump.exit_node,
                 };
 
-                jump_table.insert(from, jump);
+                jump_table[from] = Some(jump);
             }
-            
+
             all_same_step = current_nodes[i].steps == largest_number_of_steps && all_same_step;
+            largest_number_of_steps =
+                std::cmp::max(largest_number_of_steps, current_nodes[i].steps);
         }
 
         if all_same_step {
             return Ok(current_nodes[0].steps);
         }
     }
-
-    Err(eyre!("no solution"))
 }
 
 fn find_jump<'a>(
-    current: &State<'a>,
+    mut current_node: &'a str,
+    mut instr_idx: usize,
     nodes: &'a HashMap<String, (String, String)>,
+    nodes_to_idx: &HashMap<&'a str, usize>,
     instructions: &[char],
-) -> Jump<'a> {
-    let mut current_node = current.node;
-    let mut instr_idx = current.next_instr_idx;
-
+) -> Jump {
     let mut step = 0;
 
     loop {
@@ -147,7 +161,7 @@ fn find_jump<'a>(
 
         if current_node.ends_with('Z') {
             return Jump {
-                exit_node: current_node,
+                exit_node: *nodes_to_idx.get(current_node).unwrap(),
                 steps_to_exit: step,
                 next_instr_idx: (instr_idx + 1) % instructions.len(),
             };
@@ -157,17 +171,16 @@ fn find_jump<'a>(
     }
 }
 
-type JumpTable<'a> = HashMap<&'a str, Jump<'a>>;
-
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
-struct State<'a> {
+struct State {
     steps: u64,
     next_instr_idx: usize,
-    node: &'a str,
+    node: usize,
 }
 
-struct Jump<'a> {
-    exit_node: &'a str,
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
+struct Jump {
+    exit_node: usize,
     steps_to_exit: u64,
     next_instr_idx: usize,
 }
