@@ -82,12 +82,11 @@ fn determine_type_value_with_joker(cards: &str) -> u64 {
         .iter()
         .map(|replacement| {
             let new_cards = cards.replace('X', &replacement.to_string());
-            let new_value = determine_type_value(&new_cards);
 
-            new_value
+            determine_type_value(&new_cards)
         })
         .max()
-        .unwrap() as u64
+        .unwrap()
 }
 
 fn determine_type_value(cards: &str) -> u64 {
