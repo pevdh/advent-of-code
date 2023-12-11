@@ -76,31 +76,23 @@ fn distance(a: (usize, usize), b: (usize, usize)) -> u64 {
 }
 
 fn task_2(input: &str) -> Result<u64> {
-    let mut image: Vec<char> = vec![];
-    let mut nrows = 0;
-    let mut ncols = 0;
+    let image = Array2::from_2d_text(input)?;
 
-    let mut columns_to_duplicate = vec![];
-    for (col_idx, column) in input.columns().enumerate() {
-        ncols += 1;
+    let columns_to_duplicate: Vec<usize> = image
+        .columns()
+        .into_iter()
+        .enumerate()
+        .filter(|(_col_idx, col)| col.iter().all(|&v| v == '.'))
+        .map(|(col_idx, _)| col_idx)
+        .collect();
 
-        if column.chars().all(|ch| ch == '.') {
-            columns_to_duplicate.push(col_idx);
-        }
-    }
-
-    let mut rows_to_duplicate = vec![];
-    for (row_idx, line) in input.lines().enumerate() {
-        nrows += 1;
-
-        if line.chars().all(|c| c == '.') {
-            rows_to_duplicate.push(row_idx);
-        }
-
-        image.extend(line.chars());
-    }
-
-    let image = Array2::from_shape_vec((nrows, ncols), image)?;
+    let rows_to_duplicate: Vec<usize> = image
+        .rows()
+        .into_iter()
+        .enumerate()
+        .filter(|(_row_idx, row)| row.iter().all(|&v| v == '.'))
+        .map(|(row_idx, _)| row_idx)
+        .collect();
 
     let galaxies = image
         .indexed_iter()
