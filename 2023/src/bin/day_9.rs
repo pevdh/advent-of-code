@@ -41,20 +41,17 @@ fn task_2(input: &str) -> Result<i64> {
 }
 
 fn extrapolate(history: &[i64]) -> i64 {
-    let mut histories: Vec<Vec<i64>> = vec![];
-    histories.push(history.to_vec());
+    let mut histories: Vec<Vec<i64>> = vec![history.to_vec()];
 
     while !histories.last().unwrap().iter().all(|v| *v == 0) {
         histories.push(differentiate(histories.last().unwrap()));
     }
 
-    for (i, j) in (0..histories.len()).rev().tuple_windows() {
-        let diff = *histories[i].last().unwrap();
-        let extrapolation = histories[j].last().unwrap() + diff;
-        histories[j].push(extrapolation);
-    }
-
-    *histories[0].last().unwrap()
+    histories
+        .iter()
+        .rev()
+        .filter_map(|history| history.last())
+        .fold(0, |delta, first| *first + delta)
 }
 
 fn differentiate(history: &[i64]) -> Vec<i64> {
@@ -66,21 +63,15 @@ fn differentiate(history: &[i64]) -> Vec<i64> {
 }
 
 fn extrapolate_backwards(history: &[i64]) -> i64 {
-    let mut histories: Vec<Vec<i64>> = vec![];
-    histories.push(history.to_vec());
+    let mut histories: Vec<Vec<i64>> = vec![history.to_vec()];
 
     while !histories.last().unwrap().iter().all(|v| *v == 0) {
         histories.push(differentiate(histories.last().unwrap()));
     }
 
-    let mut extrapolations = vec![0];
-
-    for i in (0..histories.len()).rev() {
-        let diff = *extrapolations.last().unwrap();
-        let backwards_extrapolation = histories[i].first().unwrap() - diff;
-
-        extrapolations.push(backwards_extrapolation)
-    }
-
-    *extrapolations.last().unwrap()
+    histories
+        .iter()
+        .rev()
+        .filter_map(|history| history.first())
+        .fold(0, |diff, first| *first - diff)
 }
