@@ -64,7 +64,6 @@ fn task_1(input: &str) -> Result<u64> {
     Ok(max_dist)
 }
 
-
 fn task_2(input: &str) -> Result<u64> {
     let mut tiles = Array2::from_2d_text(input)?;
 
@@ -79,20 +78,31 @@ fn task_2(input: &str) -> Result<u64> {
         .filter(|&(pos, _)| is_connected(&tiles, starting_pos, pos))
         .collect();
 
-    let dirs_connected_to_start_pos: Vec<Dir> = connected_to_start_pos.iter().map(|&(_, d)| d).sorted().collect();
-    let replace_s_with = match (dirs_connected_to_start_pos[0], dirs_connected_to_start_pos[1]) {
+    let dirs_connected_to_start_pos: Vec<Dir> = connected_to_start_pos
+        .iter()
+        .map(|&(_, d)| d)
+        .sorted()
+        .collect();
+    let replace_s_with = match (
+        dirs_connected_to_start_pos[0],
+        dirs_connected_to_start_pos[1],
+    ) {
         (Dir::North, Dir::South) => '|',
         (Dir::East, Dir::West) => '-',
         (Dir::East, Dir::South) => 'F',
         (Dir::North, Dir::East) => 'L',
         (Dir::South, Dir::West) => '7',
         (Dir::North, Dir::West) => 'J',
-        _ => panic!("unable to determine start pos from {:?}", dirs_connected_to_start_pos),
+        _ => panic!(
+            "unable to determine start pos from {:?}",
+            dirs_connected_to_start_pos
+        ),
     };
 
     tiles[starting_pos] = replace_s_with;
 
-    let mut queue: VecDeque<(Dir, (usize, usize), u64)> = connected_to_start_pos.iter()
+    let mut queue: VecDeque<(Dir, (usize, usize), u64)> = connected_to_start_pos
+        .iter()
         .map(|&(pos, dir_from_start)| (flip(dir_from_start), pos, 1))
         .collect();
 
@@ -115,7 +125,8 @@ fn task_2(input: &str) -> Result<u64> {
     let mut to_visit = VecDeque::new();
     to_visit.push_back((0usize, 0usize));
 
-    let mut visited: Array2<bool> = Array2::from_elem((tiles.nrows() + 1, tiles.ncols() + 1), false);
+    let mut visited: Array2<bool> =
+        Array2::from_elem((tiles.nrows() + 1, tiles.ncols() + 1), false);
 
     while let Some(current) = to_visit.pop_front() {
         if visited[current] {
@@ -140,12 +151,19 @@ fn task_2(input: &str) -> Result<u64> {
             let neighbor_pipe = pipes[neighbor];
 
             let can_move = if move_direction == Dir::South {
-                current.0 < (pipes.nrows() - 1) && pipes[current] != '-' && pipes[current] != '7' && pipes[current] != 'J'
+                current.0 < (pipes.nrows() - 1)
+                    && pipes[current] != '-'
+                    && pipes[current] != '7'
+                    && pipes[current] != 'J'
             } else if move_direction == Dir::North {
                 neighbor_pipe != '-' && neighbor_pipe != '7' && neighbor_pipe != 'J'
             } else if move_direction == Dir::East {
-                current.1 < (pipes.ncols() - 1) && pipes[current] != '|' && pipes[current] != 'J' && pipes[current] != 'L'
-            } else { // west
+                current.1 < (pipes.ncols() - 1)
+                    && pipes[current] != '|'
+                    && pipes[current] != 'J'
+                    && pipes[current] != 'L'
+            } else {
+                // west
                 neighbor_pipe != '|' && neighbor_pipe != 'J' && neighbor_pipe != 'L'
             };
 
