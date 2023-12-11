@@ -2,7 +2,6 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::io;
 use std::io::Write;
-use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::time::{Duration, Instant};
 
@@ -171,7 +170,7 @@ pub trait Frequencies<FreqType: PrimInt>: Iterator {
 impl<It: ?Sized, FreqType: PrimInt> Frequencies<FreqType> for It where It: Iterator {}
 
 pub struct Neighborhood {
-    neighbors: [MaybeUninit<(usize, usize)>; 8],
+    neighbors: [(usize, usize); 8],
     alive: Range<usize>,
 }
 
@@ -208,19 +207,14 @@ impl<S: RawData> Neighbors for ArrayBase<S, Ix2> {
             }
         }
 
-        let mut n = Neighborhood {
-            neighbors: [unsafe { MaybeUninit::uninit().assume_init() }; 8],
+        Neighborhood {
+            neighbors,
             alive: 0..size,
-        };
-
-        let dst_ptr = n.neighbors.as_mut_ptr() as *mut _;
-        unsafe { neighbors.as_ptr().copy_to_nonoverlapping(dst_ptr, size) };
-
-        n
+        }
     }
 
     fn von_neumann_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood {
-        let mut neighbors = [(0, 0); 4];
+        let mut neighbors = [(0, 0); 8];
 
         let mut size = 0;
         for rel_pos in [(-1, 0), (0, -1), (0, 1), (1, 0)] {
@@ -237,15 +231,10 @@ impl<S: RawData> Neighbors for ArrayBase<S, Ix2> {
             }
         }
 
-        let mut n = Neighborhood {
-            neighbors: [unsafe { MaybeUninit::uninit().assume_init() }; 8],
+        Neighborhood {
+            neighbors,
             alive: 0..size,
-        };
-
-        let dst_ptr = n.neighbors.as_mut_ptr() as *mut _;
-        unsafe { neighbors.as_ptr().copy_to_nonoverlapping(dst_ptr, size) };
-
-        n
+        }
     }
 }
 
@@ -255,7 +244,7 @@ impl Iterator for Neighborhood {
     fn next(&mut self) -> Option<Self::Item> {
         self.alive
             .next()
-            .map(|idx| unsafe { self.neighbors.get_unchecked(idx).assume_init() })
+            .map(|idx| unsafe { *self.neighbors.get_unchecked(idx) })
     }
 }
 
