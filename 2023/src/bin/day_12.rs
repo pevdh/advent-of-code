@@ -64,26 +64,15 @@ fn task_2(input: &str) -> Result<u64> {
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct MemoizationKey {
-    cr_len: usize,
-    groups_len: usize,
-    num_operational: usize,
-    num_damaged: usize,
-    num_unknown: usize,
-    num_left_in_group: usize,
-    group_total: usize,
+    condition_record: Vec<char>,
+    groups: Vec<usize>,
 }
 
 fn num_possible(condition_record: &[char], groups: &[usize]) -> u64 {
-    #[allow(clippy::too_many_arguments)]
     fn nom_possible_rec(
-        hm: &mut HashMap<MemoizationKey, u64>,
+        memoization_map: &mut HashMap<MemoizationKey, u64>,
         condition_record: &[char],
         groups: &[usize],
-        num_operational: usize,
-        num_damaged: usize,
-        num_unknown: usize,
-        num_left_in_group: usize,
-        group_total: usize,
     ) -> u64 {
         if condition_record.is_empty() && groups.is_empty() {
             return 1;
@@ -102,33 +91,19 @@ fn num_possible(condition_record: &[char], groups: &[usize]) -> u64 {
             return 0;
         }
 
-        let s = MemoizationKey {
-            cr_len: condition_record.len(),
-            groups_len: groups.len(),
-            num_operational,
-            num_damaged,
-            num_unknown,
-            num_left_in_group,
-            group_total,
+        let key = MemoizationKey {
+            condition_record: condition_record.to_vec(),
+            groups: groups.to_vec(),
         };
 
-        if let Some(&v) = hm.get(&s) {
-            return v;
+        if let Some(&num) = memoization_map.get(&key) {
+            return num;
         }
 
         let ch = condition_record[0];
 
         let possibilities = match ch {
-            '.' => nom_possible_rec(
-                hm,
-                &condition_record[1..],
-                groups,
-                num_operational - 1,
-                num_damaged,
-                num_unknown,
-                num_left_in_group,
-                group_total,
-            ),
+            '.' => nom_possible_rec(memoization_map, &condition_record[1..], groups),
             '#' => {
                 // consume the group and one "."
                 let group_size = groups[0];
@@ -136,28 +111,17 @@ fn num_possible(condition_record: &[char], groups: &[usize]) -> u64 {
                     return 0;
                 }
 
-                let mut num_damaged_in_group = 0;
-                let mut num_unknown_in_group = 0;
-
-                for &ch in condition_record.iter().take(group_size) {
-                    if ch == '?' {
-                        num_unknown_in_group += 1;
-                    } else if ch == '#' {
-                        num_damaged_in_group += 1;
-                    } else {
-                        // group cannot contain "."
-                        return 0;
-                    }
+                if !condition_record[..group_size]
+                    .iter()
+                    .all(|&c| c == '?' || c == '#')
+                {
+                    return 0;
                 }
 
                 // check if group ends with "." or "?".
                 let char_after_group = condition_record.get(group_size).copied();
 
-                let new_condition_record = if char_after_group == Some('.') {
-                    &condition_record[group_size + 1..]
-                } else if char_after_group == Some('?') {
-                    num_unknown_in_group += 1;
-
+                let new_condition_record = if char_after_group == Some('.') || char_after_group == Some('?') {
                     &condition_record[group_size + 1..]
                 } else if char_after_group == Some('#') {
                     return 0;
@@ -166,62 +130,26 @@ fn num_possible(condition_record: &[char], groups: &[usize]) -> u64 {
                     &condition_record[group_size..]
                 };
 
-                nom_possible_rec(
-                    hm,
-                    new_condition_record,
-                    &groups[1..],
-                    num_operational,
-                    num_damaged - num_damaged_in_group,
-                    num_unknown - num_unknown_in_group,
-                    num_left_in_group - group_size,
-                    group_total,
-                )
+                nom_possible_rec(memoization_map, new_condition_record, &groups[1..])
             }
             '?' => {
                 let mut condition_record = condition_record.to_vec();
                 condition_record[0] = '.';
 
-                let left = nom_possible_rec(
-                    hm,
-                    &condition_record,
-                    groups,
-                    num_operational + 1,
-                    num_damaged,
-                    num_unknown - 1,
-                    num_left_in_group,
-                    group_total,
-                );
+                let left = nom_possible_rec(memoization_map, &condition_record, groups);
 
                 condition_record[0] = '#';
-                let right = nom_possible_rec(
-                    hm,
-                    &condition_record,
-                    groups,
-                    num_operational,
-                    num_damaged + 1,
-                    num_unknown - 1,
-                    num_left_in_group,
-                    group_total,
-                );
+                let right = nom_possible_rec(memoization_map, &condition_record, groups);
 
                 left + right
             }
             _ => panic!("unknown character: {}", ch),
         };
         // memoize return value
-        hm.insert(s, possibilities);
+        memoization_map.insert(key, possibilities);
 
         possibilities
     }
 
-    return nom_possible_rec(
-        &mut HashMap::default(),
-        condition_record,
-        groups,
-        condition_record.iter().filter(|&c| *c == '.').count(),
-        condition_record.iter().filter(|&c| *c == '#').count(),
-        condition_record.iter().filter(|&c| *c == '?').count(),
-        groups.iter().sum(),
-        groups.iter().sum(),
-    );
+    nom_possible_rec(&mut HashMap::default(), condition_record, groups)
 }
