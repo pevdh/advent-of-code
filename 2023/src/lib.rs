@@ -5,7 +5,7 @@ use std::io::Write;
 use std::ops::Range;
 use std::time::{Duration, Instant};
 
-use ascii::{AsAsciiStr, AsciiChar, AsciiStr, AsciiString};
+use ascii::{AsAsciiStr, AsciiChar, AsciiStr};
 use ndarray::{ArrayBase, Ix2, RawData};
 use nom::error::{convert_error, VerboseError};
 use nom::{Err, IResult};
@@ -298,11 +298,11 @@ pub struct StringColumns<'a> {
     lines: Vec<&'a AsciiStr>,
     column_index: usize,
     longest_line_len: usize,
-    scratch_space: AsciiString,
+    scratch_space: String,
 }
 
 impl<'a> Iterator for StringColumns<'a> {
-    type Item = AsciiString;
+    type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.column_index >= self.longest_line_len {
@@ -313,9 +313,9 @@ impl<'a> Iterator for StringColumns<'a> {
 
         for line in &self.lines {
             if let Some(ch) = line.chars().nth(self.column_index) {
-                self.scratch_space.push(ch);
+                self.scratch_space.push(ch.as_char());
             } else {
-                self.scratch_space.push(AsciiChar::Null);
+                self.scratch_space.push('\0');
             }
         }
 
@@ -338,7 +338,7 @@ impl<'a> StringTools<'a> for &'a str {
 
         StringColumns {
             lines,
-            scratch_space: AsciiString::with_capacity(longest_line_len),
+            scratch_space: String::with_capacity(longest_line_len),
             column_index,
             longest_line_len,
         }
