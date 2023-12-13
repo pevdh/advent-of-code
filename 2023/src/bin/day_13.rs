@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use aoc2023::*;
 
 aoc_main!(
@@ -32,7 +34,10 @@ fn task_1(input: &str) -> Result<u64> {
             let rows: Vec<String> = pattern.lines().map(|l| l.to_string()).collect();
             let columns: Vec<String> = pattern.columns().collect();
 
-            find_reflection(&rows).unwrap_or(0) * 100 + find_reflection(&columns).unwrap_or(0)
+            find_reflection(&rows)
+                .map(|s| s * 100)
+                .or_else(|| find_reflection(&columns))
+                .expect("no reflection found")
         })
         .sum();
 
@@ -40,17 +45,19 @@ fn task_1(input: &str) -> Result<u64> {
 }
 
 fn find_reflection(pattern: &[String]) -> Option<u64> {
-    for i in 0..pattern.len() {
-        if i > 0 && pattern[i - 1] == pattern[i] {
-            let num_rows_to_check = std::cmp::min(i, pattern.len() - i);
+    for i in 1..pattern.len() {
+        if pattern[i - 1] != pattern[i] {
+            continue;
+        }
 
-            let m = (1..num_rows_to_check)
-                .map(|j| (&pattern[i + j], &pattern[i - j - 1]))
-                .all(|(left, right)| left == right);
+        let num_rows_to_check = min(i, pattern.len() - i);
 
-            if m {
-                return Some(i as u64);
-            }
+        let is_mirrored = (1..num_rows_to_check)
+            .map(|j| (&pattern[i + j], &pattern[i - j - 1]))
+            .all(|(left, right)| left == right);
+
+        if is_mirrored {
+            return Some(i as u64);
         }
     }
 
@@ -64,21 +71,17 @@ fn task_2(input: &str) -> Result<u64> {
             let rows: Vec<String> = pattern.lines().map(|s| s.to_string()).collect();
             let columns: Vec<String> = pattern.columns().collect();
 
-            let score = find_reflection2(&rows);
-            if let Some(score) = score {
-                return score * 100;
-            }
-
-            let score = find_reflection2(&columns);
-
-            score.unwrap()
+            find_reflection_with_smudge(&rows)
+                .map(|s| s * 100)
+                .or_else(|| find_reflection_with_smudge(&columns))
+                .expect("no reflection found")
         })
         .sum();
 
     Ok(answer)
 }
 
-fn find_reflection2(pattern: &[String]) -> Option<u64> {
+fn find_reflection_with_smudge(pattern: &[String]) -> Option<u64> {
     for i in 1..pattern.len() {
         let (eq, smudge_needed_for_equality) =
             almost_equal_if_not_for_that_one_smudge(&pattern[i - 1], &pattern[i]);
@@ -87,9 +90,8 @@ fn find_reflection2(pattern: &[String]) -> Option<u64> {
             continue;
         }
 
-        let num_rows_to_check = std::cmp::min(i, pattern.len() - i);
-        let mut m = true;
-
+        let num_rows_to_check = min(i, pattern.len() - i);
+        let mut is_mirrored = true;
         let mut smudge_used = smudge_needed_for_equality;
 
         for j in 1..num_rows_to_check {
@@ -97,14 +99,14 @@ fn find_reflection2(pattern: &[String]) -> Option<u64> {
                 almost_equal_if_not_for_that_one_smudge(&pattern[i + j], &pattern[i - j - 1]);
 
             if !eq || (smudge_needed_for_equality && smudge_used) {
-                m = false;
+                is_mirrored = false;
                 break;
             } else if smudge_needed_for_equality && !smudge_used {
                 smudge_used = smudge_needed_for_equality;
             }
         }
 
-        if m && smudge_used {
+        if is_mirrored && smudge_used {
             return Some(i as u64);
         }
     }
