@@ -121,14 +121,15 @@ fn num_possible(condition_record: &[char], groups: &[usize]) -> u64 {
                 // check if group ends with "." or "?".
                 let char_after_group = condition_record.get(group_size).copied();
 
-                let new_condition_record = if char_after_group == Some('.') || char_after_group == Some('?') {
-                    &condition_record[group_size + 1..]
-                } else if char_after_group == Some('#') {
-                    return 0;
-                } else {
-                    // None
-                    &condition_record[group_size..]
-                };
+                let new_condition_record =
+                    if char_after_group == Some('.') || char_after_group == Some('?') {
+                        &condition_record[group_size + 1..]
+                    } else if char_after_group == Some('#') {
+                        return 0;
+                    } else {
+                        // None
+                        &condition_record[group_size..]
+                    };
 
                 nom_possible_rec(memoization_map, new_condition_record, &groups[1..])
             }
