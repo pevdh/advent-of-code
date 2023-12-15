@@ -12,16 +12,15 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<u64> {
-    let result = input
-        .split(',')
-        .map(|step| hash(step).unwrap() as u64)
-        .sum();
+    let hashes: Vec<u64> = input.split(',')
+        .map(|step| hash(step).map(|hash| hash % 256))
+        .collect::<Result<_>>()?;
 
-    Ok(result)
+    Ok(hashes.iter().sum())
 }
 
 fn task_2(input: &str) -> Result<u64> {
-    let mut hm = HASHMAP::new();
+    let mut hm: HASHMAP<'_, 256> = HASHMAP::new();
 
     for step in input.split(',') {
         if let Some((label, focal_length)) = step.split_once('=') {
@@ -35,14 +34,12 @@ fn task_2(input: &str) -> Result<u64> {
     Ok(hm.focusing_power())
 }
 
-fn hash(s: &str) -> Result<usize> {
-    let mut hash = 0;
-    for ch in s.chars() {
-        let ch = ch.to_ascii_char()?;
-        hash = ((hash + ch.as_byte() as usize) * 17) % 256;
-    }
-
-    Ok(hash)
+fn hash(s: &str) -> Result<u64> {
+    s.chars()
+        .map(|c| c.to_ascii_char().wrap_err_with(|| format!("while attempting to interpret \"{}\" as an ASCII char", c)))
+        .try_fold(0_u64, |acc, ch| {
+            ch.map(|ch| (acc + ch.as_byte() as u64) * 17)
+        })
 }
 
 struct Lens<'a> {
@@ -51,19 +48,22 @@ struct Lens<'a> {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-struct HASHMAP<'a> {
-    boxes: [Vec<Lens<'a>>; 256],
+struct HASHMAP<'a, const N: usize> {
+    boxes: [Vec<Lens<'a>>; N],
 }
 
-impl<'a> HASHMAP<'a> {
-    fn new() -> HASHMAP<'a> {
-        let boxes = [(); 256].map(|_| vec![]);
+impl<'a, const N: usize> HASHMAP<'a, N> {
+    fn new() -> HASHMAP<'a, N> {
+        let boxes = [(); N].map(|_| vec![]);
         HASHMAP { boxes }
     }
 
+    fn idx(&self, label: &str) -> Result<usize> {
+        Ok(hash(label)? as usize % N)
+    }
+
     fn remove(&mut self, label: &str) -> Result<()> {
-        let box_idx = hash(label)?;
-        let bx = &mut self.boxes[box_idx];
+        let bx = &mut self.boxes[self.idx(label)?];
 
         bx.retain(|lens| lens.label != label);
 
@@ -71,8 +71,7 @@ impl<'a> HASHMAP<'a> {
     }
 
     fn insert(&mut self, label: &'a str, focal_length: u64) -> Result<()> {
-        let box_idx = hash(label)?;
-        let bx = &mut self.boxes[box_idx];
+        let bx = &mut self.boxes[self.idx(label)?];
 
         if let Some(pos) = bx.iter().position(|lens| lens.label == label) {
             bx[pos] = Lens {
