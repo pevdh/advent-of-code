@@ -6,7 +6,7 @@ use std::ops::Range;
 use std::time::{Duration, Instant};
 
 use ascii::{AsAsciiStr, AsciiChar, AsciiStr};
-use ndarray::{ArrayBase, Ix2, RawData};
+use ndarray::{ArrayBase, Data, Ix2, RawData};
 use nom::error::{convert_error, VerboseError};
 use nom::{Err, IResult};
 use num_traits::PrimInt;
@@ -488,4 +488,18 @@ impl<T> OptionTools<T> for Option<T> {
     fn ok_or_parse_error(self) -> Result<T> {
         self.ok_or(eyre!("Parse error"))
     }
+}
+
+pub fn print_grid<A>(grid: &ArrayBase<A, Ix2>)
+where
+    A: Data,
+    A::Elem: Display,
+{
+    for i in 0..grid.nrows() {
+        for j in 0..grid.ncols() {
+            print!("{}", grid[(i, j)]);
+        }
+        println!();
+    }
+    println!();
 }
