@@ -12,7 +12,8 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<u64> {
-    let hashes: Vec<u64> = input.split(',')
+    let hashes: Vec<u64> = input
+        .split(',')
         .map(|step| hash(step).map(|hash| hash % 256))
         .collect::<Result<_>>()?;
 
@@ -36,7 +37,11 @@ fn task_2(input: &str) -> Result<u64> {
 
 fn hash(s: &str) -> Result<u64> {
     s.chars()
-        .map(|c| c.to_ascii_char().wrap_err_with(|| format!("while attempting to interpret \"{}\" as an ASCII char", c)))
+        .map(|c| {
+            c.to_ascii_char().wrap_err_with(|| {
+                format!("while attempting to interpret \"{}\" as an ASCII char", c)
+            })
+        })
         .try_fold(0_u64, |acc, ch| {
             ch.map(|ch| (acc + ch.as_byte() as u64) * 17)
         })
