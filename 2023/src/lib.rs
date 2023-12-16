@@ -503,3 +503,13 @@ where
     }
     println!();
 }
+
+pub trait TupleTools {
+    fn into_index(self) -> (usize, usize);
+}
+
+impl TupleTools for (i64, i64) {
+    fn into_index(self) -> (usize, usize) {
+        (self.0 as usize, self.1 as usize)
+    }
+}

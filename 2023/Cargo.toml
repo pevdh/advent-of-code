@@ -14,6 +14,7 @@ rustc-hash = "1.1.0"
 "ascii" = "1.1.0"
 eyre = "0.6.9"
 color-eyre = { version = "0.6.2", default-features = false }
+rayon = "1.8.0"
 
 [profile.release]
 debug = true
