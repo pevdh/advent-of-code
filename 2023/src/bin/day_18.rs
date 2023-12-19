@@ -1,5 +1,8 @@
 use core::panic;
-use std::{collections::HashMap, cmp::{min, max}};
+use std::{
+    cmp::{max, min},
+    collections::HashMap,
+};
 
 use aoc2023::*;
 use rayon::iter::MapInit;
@@ -126,7 +129,7 @@ fn compute_area_from_instructions(instructions: &[(char, i64)], map: &Array2<boo
             }
             'U' => {
                 current_row -= dist;
-                
+
                 min_row = min(min_row, current_row);
                 max_row = max(max_row, current_row);
             }
@@ -403,7 +406,7 @@ fn merge(ranges: &mut [Range]) -> Vec<Range> {
     let mut ranges_it = ranges.iter();
 
     let mut curr = *ranges_it.next().unwrap();
-    
+
     for next in ranges_it {
         if let Some(merged_range) = curr.try_merge(next) {
             curr = merged_range;
@@ -466,8 +469,8 @@ fn compute_map(input: &str) -> Result<Array2<bool>> {
             .is_some()
     });
 
-
-    let mut to_visit: HashSet<(usize, usize)> = HashSet::from_iter(map.indexed_iter().map(|(pos, _)| pos));
+    let mut to_visit: HashSet<(usize, usize)> =
+        HashSet::from_iter(map.indexed_iter().map(|(pos, _)| pos));
     let mut inside: HashSet<(usize, usize)> = HashSet::default();
 
     while let Some(&(row, col)) = to_visit.iter().next() {
@@ -481,24 +484,29 @@ fn compute_map(input: &str) -> Result<Array2<bool>> {
             let mut visited = HashSet::default();
             let mut to_visit = vec![(row, col)];
             let mut is_inside = true;
-            
+
             while let Some(current) = to_visit.pop() {
                 if visited.contains(&current) {
                     continue;
                 }
 
-                let neighbors = map.von_neumann_neighborhood(&current)
+                let neighbors = map
+                    .von_neumann_neighborhood(&current)
                     .filter(|&neighbor| !map[neighbor] && !visited.contains(&neighbor));
-                
+
                 to_visit.extend(neighbors);
 
                 visited.insert(current);
 
-                if current.0 == 0 || current.1 == 0 || current.0 == (nrows - 1) || current.1 == (ncols - 1) {
+                if current.0 == 0
+                    || current.1 == 0
+                    || current.0 == (nrows - 1)
+                    || current.1 == (ncols - 1)
+                {
                     is_inside = false;
                 }
             }
-            
+
             // println!("{:?}", visited);
 
             (visited, is_inside)
@@ -510,7 +518,6 @@ fn compute_map(input: &str) -> Result<Array2<bool>> {
         }
 
         to_visit = to_visit.difference(&set).cloned().collect();
-        
     }
 
     for row in 0..nrows {
@@ -518,7 +525,7 @@ fn compute_map(input: &str) -> Result<Array2<bool>> {
             map[(row, col)] = map[(row, col)] || inside.contains(&(row, col))
         }
     }
-    
+
     Ok(map)
 }
 
@@ -561,7 +568,18 @@ mod test {
         // ### ###
         // # #####
         // ######
-        let instr = vec![('R', 2), ('D', 1), ('R', 2), ('U', 1), ('R', 2), ('D', 1), ('L', 1), ('D', 1), ('L', 5), ('U', 2)];
+        let instr = vec![
+            ('R', 2),
+            ('D', 1),
+            ('R', 2),
+            ('U', 1),
+            ('R', 2),
+            ('D', 1),
+            ('L', 1),
+            ('D', 1),
+            ('L', 5),
+            ('U', 2),
+        ];
 
         assert_eq!(19, compute_area_from_instructions(&instr));
     }
