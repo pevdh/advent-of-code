@@ -62,6 +62,21 @@ struct CategoryRanges {
     s: Range,
 }
 
+#[derive(Debug)]
+struct Rule<'a> {
+    condition: Option<Condition>,
+    label: &'a str,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Condition {
+    lhs: char,
+    op: char,
+    rhs: i64,
+}
+
+type Part = (i64, i64, i64, i64);
+
 impl CategoryRanges {
     fn split_on_condition(&self, condition: &Condition) -> (CategoryRanges, CategoryRanges) {
         let mut accepted = *self;
@@ -139,21 +154,14 @@ fn compute_num_accepted(workflows: &HashMap<&str, Vec<Rule>>) -> Result<u64> {
     ));
 
     let mut accepted_ranges = vec![];
-    let mut rejected_ranges = vec![];
 
     while let Some((label, mut category_ranges)) = to_visit.pop_front() {
-        dbg!(label);
-        // dbg!(to_visit.iter().map(|(_, r)| r.num_combinations()).sum::<u64>());
-        dbg!(category_ranges.num_combinations());
-        dbg!(4000_u64 * 4000 * 4000 * 4000);
-
         if label == "A" {
             accepted_ranges.push(category_ranges);
             continue;
         }
 
         if label == "R" {
-            rejected_ranges.push(category_ranges);
             continue;
         }
 
@@ -309,10 +317,8 @@ fn parse_part(part_line: &str) -> Result<(i64, i64, i64, i64)> {
     use nom::character::complete::char;
     use nom::character::complete::i64;
     use nom::{
-        branch::alt,
-        character::complete::{alpha1, anychar},
+        character::complete::anychar,
         combinator::map,
-        multi::separated_list0,
         sequence::{delimited, tuple},
     };
 
@@ -340,17 +346,3 @@ fn parse_part(part_line: &str) -> Result<(i64, i64, i64, i64)> {
     nom_parse(part_line, part)
 }
 
-#[derive(Debug)]
-struct Rule<'a> {
-    condition: Option<Condition>,
-    label: &'a str,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Condition {
-    lhs: char,
-    op: char,
-    rhs: i64,
-}
-
-type Part = (i64, i64, i64, i64);
