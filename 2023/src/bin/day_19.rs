@@ -345,4 +345,3 @@ fn parse_part(part_line: &str) -> Result<(i64, i64, i64, i64)> {
 
     nom_parse(part_line, part)
 }
-
