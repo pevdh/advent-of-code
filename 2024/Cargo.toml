@@ -1,0 +1,20 @@
+[package]
+name = "aoc2024"
+version = "0.1.0"
+authors = ["Pieter van den Ham <p.e.vandenham@gmail.com>"]
+edition = "2024"
+
+[dependencies]
+itertools = "0.10.3"
+indoc = "1.0.7"
+num-traits = "0.2.15"
+ndarray = "0.15.6"
+nom = "7.1.1"
+rustc-hash = "1.1.0"
+"ascii" = "1.1.0"
+eyre = "0.6.9"
+color-eyre = { version = "0.6.2", default-features = false }
+rayon = "1.8.0"
+
+[profile.release]
+debug = true
