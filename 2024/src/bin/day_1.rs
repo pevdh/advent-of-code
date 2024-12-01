@@ -31,11 +31,12 @@ fn task_1(input: &str) -> Result<i64> {
     left_list.sort();
     right_list.sort();
 
-    let mut sum = 0;
-    for i in 0..left_list.len() {
-        let dist = (left_list[i] - right_list[i]).abs();
-        sum += dist;
-    }
+    let sum = left_list.iter()
+        .zip(right_list.iter())
+        .map(|(&left, &right)| {
+            (left - right).abs()
+        })
+        .sum();
 
     Ok(sum)
 }
@@ -52,19 +53,11 @@ fn task_2(input: &str) -> Result<i64> {
         right_list.push(right);
     }
 
-    let mut right_list_counts= HashMap::default();
-    for right in right_list {
-        let count = right_list_counts.entry(right).or_insert(0i64);
-        *count += 1;
-    }
+    let right_list_counts: HashMap<i64, i64> = right_list.into_iter().frequencies();
+    let similarity_score = left_list.iter()
+        .map(|&left|
+            left * right_list_counts.get(&left).unwrap_or(&0)
+        );
 
-    let mut similarity_score = 0;
-    for i in 0..left_list.len() {
-        let left = left_list[i];
-        let occurrences = right_list_counts.get(&left).unwrap_or(&0);
-
-        similarity_score += left * occurrences;
-    }
-
-    Ok(similarity_score)
+    Ok(similarity_score.sum())
 }
