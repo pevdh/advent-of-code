@@ -42,7 +42,7 @@ fn task_2(input: &str) -> Result<usize> {
         });
 
     let num_safe_reports = reports
-            .filter(|report| is_safe(report.iter().copied()) || is_safe_with_tolerance(&report))
+            .filter(|report| is_safe(report.iter().copied()) || is_safe_with_tolerance(report))
             .count();
 
     Ok(num_safe_reports)
@@ -50,17 +50,16 @@ fn task_2(input: &str) -> Result<usize> {
 
 fn is_safe_with_tolerance(levels: &[i64]) -> bool {
     let is_safe = (0..levels.len())
-        .map(|dropped_idx| {
+        .any(|dropped_idx| {
             let modified = levels.iter()
                 .enumerate()
                 .filter(|&(idx, _)| idx != dropped_idx)
                 .map(|(_, &level)| level);
 
-            return is_safe(modified);
-        })
-        .any(|is_safe| is_safe);
+            is_safe(modified)
+        });
 
-    return is_safe;
+    is_safe
 }
 
 fn is_safe<L>(levels: L) -> bool 
@@ -80,9 +79,9 @@ where L: Iterator<Item = i64>
 
     let small_differences = differences.iter()
         .map(|&d| d.abs())
-        .all(|d| d >= 1 && d <= 3);
+        .all(|d| (1..=3).contains(&d));
 
-    let is_safe = (all_increasing || all_decreasing) && small_differences;
+    
 
-    return is_safe;
+    (all_increasing || all_decreasing) && small_differences
 }
