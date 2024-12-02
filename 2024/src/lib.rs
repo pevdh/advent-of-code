@@ -303,7 +303,7 @@ pub struct StringColumns<'a> {
     scratch_space: String,
 }
 
-impl<'a> Iterator for StringColumns<'a> {
+impl Iterator for StringColumns<'_> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -460,7 +460,7 @@ impl<'a, T> Array2Tools<'a, T> for ArrayView2<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for StepIter2<'a, T>
+impl<T> Iterator for StepIter2<'_, T>
 where
     T: Copy,
 {
