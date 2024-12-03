@@ -51,37 +51,26 @@ fn task_2(input: &str) -> Result<usize> {
 fn is_safe_with_tolerance(levels: &[i64]) -> bool {
     let is_safe = (0..levels.len())
         .any(|dropped_idx| {
-            let modified = levels.iter()
+            let modified_report = levels.iter()
                 .enumerate()
                 .filter(|&(idx, _)| idx != dropped_idx)
                 .map(|(_, &level)| level);
 
-            is_safe(modified)
+            is_safe(modified_report)
         });
 
     is_safe
 }
 
-fn is_safe<L>(levels: L) -> bool 
-where L: Iterator<Item = i64>
+fn is_safe(report: impl Iterator<Item = i64>) -> bool 
 {
-    let differences: Vec<i64> = levels.tuple_windows()
+    let (inc, dec, diffs)= report.tuple_windows()
         .map(|(a, b)| {
             b - a
         })
-        .collect();
-
-    let all_increasing = differences.iter()
-        .all(|&d| d > 0);
-
-    let all_decreasing = differences.iter()
-        .all(|&d| d < 0);
-
-    let small_differences = differences.iter()
-        .map(|&d| d.abs())
-        .all(|d| (1..=3).contains(&d));
-
+        .fold((true, true, true), |(inc, dec, diffs), d| {
+            (inc && d > 0, dec && d < 0, diffs && (1..=3).contains(&d))
+        });
     
-
-    (all_increasing || all_decreasing) && small_differences
+    (inc || dec) && diffs
 }
