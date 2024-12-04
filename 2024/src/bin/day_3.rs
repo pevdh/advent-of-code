@@ -18,7 +18,8 @@ xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))
 fn task_1(input: &str) -> Result<i64> {
     let regex = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
 
-    let multiplications: Vec<(i64, i64)> = regex.captures_iter(input)
+    let multiplications: Vec<(i64, i64)> = regex
+        .captures_iter(input)
         .map(|capture| {
             let left = capture.get(1).unwrap().as_str().parse().unwrap();
             let right = capture.get(2).unwrap().as_str().parse().unwrap();
@@ -27,11 +28,11 @@ fn task_1(input: &str) -> Result<i64> {
         })
         .collect::<Vec<(i64, i64)>>();
 
-    Ok(multiplications.iter()
+    Ok(multiplications
+        .iter()
         .map(|(left, right)| left * right)
         .sum())
 }
-
 
 fn task_2(input: &str) -> Result<i64> {
     let regex = Regex::new(r"(do\(\))|(don\'t\(\))|((mul)\((?<left>\d+),(?<right>\d+)\))").unwrap();
@@ -54,5 +55,4 @@ fn task_2(input: &str) -> Result<i64> {
     }
 
     Ok(result)
-
 }

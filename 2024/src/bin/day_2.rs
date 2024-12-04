@@ -17,60 +17,54 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<usize> {
-    let reports = input.lines()
-            .map(|line| {
-                    line
-                        .split_whitespace()
-                        .map(|l| l.parse::<i64>().unwrap())
-                        .collect::<Vec<i64>>()
-            });
+    let reports = input.lines().map(|line| {
+        line.split_whitespace()
+            .map(|l| l.parse::<i64>().unwrap())
+            .collect::<Vec<i64>>()
+    });
 
     let num_safe_reports = reports
-            .filter(|report| is_safe(report.iter().copied()))
-            .count();
+        .filter(|report| is_safe(report.iter().copied()))
+        .count();
 
     Ok(num_safe_reports)
 }
 
 fn task_2(input: &str) -> Result<usize> {
-    let reports = input.lines()
-        .map(|line| {
-                line
-                    .split_whitespace()
-                    .map(|l| l.parse::<i64>().unwrap())
-                    .collect::<Vec<i64>>()
-        });
+    let reports = input.lines().map(|line| {
+        line.split_whitespace()
+            .map(|l| l.parse::<i64>().unwrap())
+            .collect::<Vec<i64>>()
+    });
 
     let num_safe_reports = reports
-            .filter(|report| is_safe(report.iter().copied()) || is_safe_with_tolerance(report))
-            .count();
+        .filter(|report| is_safe(report.iter().copied()) || is_safe_with_tolerance(report))
+        .count();
 
     Ok(num_safe_reports)
 }
 
 fn is_safe_with_tolerance(levels: &[i64]) -> bool {
-    let is_safe = (0..levels.len())
-        .any(|dropped_idx| {
-            let modified_report = levels.iter()
-                .enumerate()
-                .filter(|&(idx, _)| idx != dropped_idx)
-                .map(|(_, &level)| level);
+    let is_safe = (0..levels.len()).any(|dropped_idx| {
+        let modified_report = levels
+            .iter()
+            .enumerate()
+            .filter(|&(idx, _)| idx != dropped_idx)
+            .map(|(_, &level)| level);
 
-            is_safe(modified_report)
-        });
+        is_safe(modified_report)
+    });
 
     is_safe
 }
 
-fn is_safe(report: impl Iterator<Item = i64>) -> bool 
-{
-    let (inc, dec, diffs)= report.tuple_windows()
-        .map(|(a, b)| {
-            b - a
-        })
+fn is_safe(report: impl Iterator<Item = i64>) -> bool {
+    let (inc, dec, diffs) = report
+        .tuple_windows()
+        .map(|(a, b)| b - a)
         .fold((true, true, true), |(inc, dec, diffs), d| {
             (inc && d > 0, dec && d < 0, diffs && (1..=3).contains(&d))
         });
-    
+
     (inc || dec) && diffs
 }

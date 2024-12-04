@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use ascii::{AsAsciiStr, AsciiChar, AsciiStr};
 use ndarray::{ArrayBase, Data, Ix2, RawData};
-use nom::error::{convert_error, VerboseError};
+use nom::error::{VerboseError, convert_error};
 use nom::{Err, IResult};
 use num_traits::PrimInt;
 
@@ -17,8 +17,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 pub type HashSet<V> = FxHashSet<V>;
 pub type HashMap<K, V> = FxHashMap<K, V>;
 
-pub use eyre::eyre;
 pub use eyre::Context;
+pub use eyre::eyre;
 pub use itertools::Itertools;
 pub use ndarray::{Array2, ArrayView2};
 
@@ -388,11 +388,7 @@ impl AsciiCharTools for AsciiChar {
                 .saturating_add(10);
         }
         // FIXME: once then_some is const fn, use it here
-        if digit < radix {
-            Some(digit)
-        } else {
-            None
-        }
+        if digit < radix { Some(digit) } else { None }
     }
 }
 

@@ -31,11 +31,10 @@ fn task_1(input: &str) -> Result<i64> {
     left_list.sort();
     right_list.sort();
 
-    let sum = left_list.iter()
+    let sum = left_list
+        .iter()
         .zip(right_list.iter())
-        .map(|(&left, &right)| {
-            (left - right).abs()
-        })
+        .map(|(&left, &right)| (left - right).abs())
         .sum();
 
     Ok(sum)
@@ -54,10 +53,9 @@ fn task_2(input: &str) -> Result<i64> {
     }
 
     let right_list_counts: HashMap<i64, i64> = right_list.into_iter().frequencies();
-    let similarity_score = left_list.iter()
-        .map(|&left|
-            left * right_list_counts.get(&left).unwrap_or(&0)
-        );
+    let similarity_score = left_list
+        .iter()
+        .map(|&left| left * right_list_counts.get(&left).unwrap_or(&0));
 
     Ok(similarity_score.sum())
 }
