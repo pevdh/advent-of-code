@@ -80,10 +80,8 @@ fn task_2(input: &str) -> Result<i64> {
                 word_search[(row + 1, col + 1)],
             ];
 
-            for option in options {
-                if option == letters {
-                    matches += 1;
-                }
+            if options.contains(&letters) {
+                matches += 1;
             }
         }
     }
