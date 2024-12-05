@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 use aoc2024::*;
 
@@ -46,59 +43,46 @@ aoc_main!(
 fn task_1(input: &str) -> Result<i64> {
     let (pages_to_produce_in_each_update, rules) = parse(input)?;
 
-    let mut num_valid = 0;
-
+    let mut result = 0;
     for pages in pages_to_produce_in_each_update {
-        if is_valid(&pages, &rules) {
+        if is_sorted_topologically(&pages, &rules) {
             let middle = pages[pages.len() / 2];
-            num_valid += middle;
+            result += middle;
         }
     }
 
-    Ok(num_valid)
+    Ok(result)
 }
 
 fn task_2(input: &str) -> Result<i64> {
     let (pages_to_produce_in_each_update, rules) = parse(input)?;
 
-    let mut num_valid = 0;
-
+    let mut result = 0;
     for pages in pages_to_produce_in_each_update {
-        if !is_valid(&pages, &rules) {
-            let fixed = fix(&pages, &rules);
+        if !is_sorted_topologically(&pages, &rules) {
+            let fixed = topological_sort(&pages, &rules);
             let middle = fixed[fixed.len() / 2];
-
-            num_valid += middle;
+            result += middle;
         }
     }
 
-    Ok(num_valid)
+    Ok(result)
 }
 
-type RuleMap = HashMap<i64, HashSet<i64>>;
+type RuleMap = HashMap<i64, Vec<i64>>;
 type ParsedInput = (Vec<Vec<i64>>, RuleMap);
 
 fn parse(input: &str) -> Result<ParsedInput> {
     let (page_order_rules_part, page_updates_part) =
         input.split_once("\n\n").ok_or_parse_error()?;
 
-    let page_order_rules: HashSet<(i64, i64)> = page_order_rules_part
-        .split("\n")
-        .map(|rule_part| {
-            let (first, second) = rule_part.split_once("|").unwrap();
+    let mut rules: HashMap<i64, Vec<i64>> = HashMap::default();
 
-            (
-                first.parse::<i64>().unwrap(),
-                second.parse::<i64>().unwrap(),
-            )
-        })
-        .collect();
+    for rule in page_order_rules_part.lines() {
+        let (first, second) = rule.split_once("|").ok_or_parse_error()?;
+        let (first, second) = (first.parse()?, second.parse()?);
 
-    let mut rule_map: HashMap<i64, HashSet<i64>> = HashMap::default();
-
-    for (first, second) in page_order_rules {
-        let entry = rule_map.entry(first).or_default();
-        entry.insert(second);
+        rules.entry(first).or_default().push(second);
     }
 
     let pages_to_produce_in_each_update: Vec<Vec<i64>> = page_updates_part
@@ -110,40 +94,62 @@ fn parse(input: &str) -> Result<ParsedInput> {
         })
         .collect();
 
-    Ok((pages_to_produce_in_each_update, rule_map))
+    Ok((pages_to_produce_in_each_update, rules))
 }
 
-fn is_valid(pages: &[i64], rules: &RuleMap) -> bool {
-    let mut seen = HashSet::default();
-    for &page in pages {
-        if let Some(after) = rules.get(&page) {
-            if seen.intersection(after).count() > 0 {
-                return false;
+fn is_sorted_topologically(nodes: &[i64], graph: &HashMap<i64, Vec<i64>>) -> bool {
+    let mut seen: HashSet<i64> = HashSet::default();
+    for &node in nodes {
+        if let Some(neighbors) = graph.get(&node) {
+            for &neighbor in neighbors {
+                if seen.contains(&neighbor) {
+                    return false;
+                }
             }
         }
 
-        seen.insert(page);
+        seen.insert(node);
     }
 
-    return true;
+    true
 }
 
-fn fix(pages: &[i64], rule_map: &RuleMap) -> Vec<i64> {
-    let mut fixed = pages.to_vec();
-    fixed.sort_unstable_by(|&a, &b| {
-        // a|b means a needs to be sorted before b
-        if rule_map.get(&a).unwrap_or(&HashSet::default()).contains(&b) {
-            return Ordering::Greater;
+fn topological_sort(nodes: &[i64], graph: &HashMap<i64, Vec<i64>>) -> Vec<i64> {
+    let nodes_set: HashSet<i64> = HashSet::from_iter(nodes.iter().copied());
+    let mut sorted = vec![];
+
+    let mut in_degrees: HashMap<i64, i64> = HashMap::default();
+
+    for &node in nodes {
+        for &neighbor in graph.get(&node).unwrap_or(&vec![]) {
+            if nodes_set.contains(&neighbor) {
+                *in_degrees.entry(neighbor).or_insert(0) += 1;
+            }
         }
+    }
 
-        // b|a means b needs to be sorted before a
-        if rule_map.get(&b).unwrap_or(&HashSet::default()).contains(&a) {
-            return Ordering::Less;
+    let mut queue: Vec<i64> = nodes
+        .iter()
+        .copied()
+        .filter(|&p| *in_degrees.get(&p).unwrap_or(&0) == 0)
+        .collect::<Vec<i64>>();
+
+    while let Some(node) = queue.pop() {
+        sorted.push(node);
+
+        for &neighbor in graph.get(&node).unwrap_or(&vec![]) {
+            match in_degrees.get_mut(&neighbor) {
+                Some(entry) => {
+                    *entry -= 1;
+
+                    if *entry == 0 {
+                        queue.push(neighbor);
+                    }
+                }
+                None => continue,
+            }
         }
+    }
 
-        // otherwise we don't care
-        return Ordering::Equal;
-    });
-
-    fixed
+    sorted
 }
