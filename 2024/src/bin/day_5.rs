@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+};
 
 use aoc2024::*;
 
@@ -41,12 +44,12 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<i64> {
-    let (pages_to_produce_in_each_update, rule_map) = parse(input)?;
+    let (pages_to_produce_in_each_update, rules) = parse(input)?;
 
     let mut num_valid = 0;
 
     for pages in pages_to_produce_in_each_update {
-        if is_valid(&pages, &rule_map) {
+        if is_valid(&pages, &rules) {
             let middle = pages[pages.len() / 2];
             num_valid += middle;
         }
@@ -56,13 +59,13 @@ fn task_1(input: &str) -> Result<i64> {
 }
 
 fn task_2(input: &str) -> Result<i64> {
-    let (pages_to_produce_in_each_update, rule_map) = parse(input)?;
+    let (pages_to_produce_in_each_update, rules) = parse(input)?;
 
     let mut num_valid = 0;
 
     for pages in pages_to_produce_in_each_update {
-        if !is_valid(&pages, &rule_map) {
-            let fixed = fix(&pages, &rule_map);
+        if !is_valid(&pages, &rules) {
+            let fixed = fix(&pages, &rules);
             let middle = fixed[fixed.len() / 2];
 
             num_valid += middle;
@@ -72,13 +75,14 @@ fn task_2(input: &str) -> Result<i64> {
     Ok(num_valid)
 }
 
-type ParsedInput = (Vec<Vec<i64>>, HashMap<i64, Vec<i64>>);
+type RuleMap = HashMap<i64, HashSet<i64>>;
+type ParsedInput = (Vec<Vec<i64>>, RuleMap);
 
 fn parse(input: &str) -> Result<ParsedInput> {
     let (page_order_rules_part, page_updates_part) =
         input.split_once("\n\n").ok_or_parse_error()?;
 
-    let page_order_rules: Vec<(i64, i64)> = page_order_rules_part
+    let page_order_rules: HashSet<(i64, i64)> = page_order_rules_part
         .split("\n")
         .map(|rule_part| {
             let (first, second) = rule_part.split_once("|").unwrap();
@@ -90,10 +94,11 @@ fn parse(input: &str) -> Result<ParsedInput> {
         })
         .collect();
 
-    let mut rule_map: HashMap<i64, Vec<i64>> = HashMap::default();
+    let mut rule_map: HashMap<i64, HashSet<i64>> = HashMap::default();
+
     for (first, second) in page_order_rules {
         let entry = rule_map.entry(first).or_default();
-        entry.push(second);
+        entry.insert(second);
     }
 
     let pages_to_produce_in_each_update: Vec<Vec<i64>> = page_updates_part
@@ -108,13 +113,11 @@ fn parse(input: &str) -> Result<ParsedInput> {
     Ok((pages_to_produce_in_each_update, rule_map))
 }
 
-fn is_valid(pages: &[i64], rules: &HashMap<i64, Vec<i64>>) -> bool {
-    let mut seen: HashSet<i64> = HashSet::default();
+fn is_valid(pages: &[i64], rules: &RuleMap) -> bool {
+    let mut seen = HashSet::default();
     for &page in pages {
-        for &second in rules.get(&page).unwrap_or(&vec![]) {
-            let rule_valid = !seen.contains(&second);
-
-            if !rule_valid {
+        if let Some(after) = rules.get(&page) {
+            if seen.intersection(after).count() > 0 {
                 return false;
             }
         }
@@ -122,35 +125,25 @@ fn is_valid(pages: &[i64], rules: &HashMap<i64, Vec<i64>>) -> bool {
         seen.insert(page);
     }
 
-    true
+    return true;
 }
 
-fn fix(pages: &[i64], rules: &HashMap<i64, Vec<i64>>) -> Vec<i64> {
-    let mut seen: HashSet<i64> = HashSet::default();
-
+fn fix(pages: &[i64], rule_map: &RuleMap) -> Vec<i64> {
     let mut fixed = pages.to_vec();
-    let mut idx = 0;
-    while idx < fixed.len() {
-        let page = fixed[idx];
-
-        for &second in rules.get(&page).unwrap_or(&vec![]) {
-            let rule_valid = !seen.contains(&second);
-
-            if !rule_valid {
-                // if we have seen the second value then we need to move it to after the current page
-                let second_idx = fixed.iter().position(|&p| p == second).unwrap();
-
-                fixed.insert(idx + 1, second);
-                fixed.remove(second_idx);
-
-                seen.remove(&second);
-                idx -= 1;
-            }
+    fixed.sort_unstable_by(|&a, &b| {
+        // a|b means a needs to be sorted before b
+        if rule_map.get(&a).unwrap_or(&HashSet::default()).contains(&b) {
+            return Ordering::Greater;
         }
 
-        seen.insert(page);
-        idx += 1;
-    }
+        // b|a means b needs to be sorted before a
+        if rule_map.get(&b).unwrap_or(&HashSet::default()).contains(&a) {
+            return Ordering::Less;
+        }
+
+        // otherwise we don't care
+        return Ordering::Equal;
+    });
 
     fixed
 }
