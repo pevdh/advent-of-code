@@ -41,10 +41,9 @@ fn task_1(input: &str) -> Result<i64> {
                 let potential_match = word_search
                     .view()
                     .step_from((row, col), dir)
-                    .take("MAS".len())
-                    .collect::<String>();
+                    .take("MAS".len());
 
-                if potential_match == "MAS" {
+                if itertools::equal(potential_match, "MAS".chars()) {
                     matches += 1;
                 }
             }
