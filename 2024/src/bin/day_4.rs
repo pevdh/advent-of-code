@@ -21,7 +21,7 @@ MXMXAXMASX
 );
 
 fn task_1(input: &str) -> Result<i64> {
-    let word_search: Array2<char> = Array2::from_2d_text(input)?;
+    let word_search = CharGrid::from_text(input)?;
 
     #[rustfmt::skip]
     let search_dirs = [
@@ -38,10 +38,7 @@ fn task_1(input: &str) -> Result<i64> {
             }
 
             for dir in search_dirs {
-                let potential_match = word_search
-                    .view()
-                    .step_from((row, col), dir)
-                    .take("MAS".len());
+                let potential_match = word_search.step_from((row, col), dir).take("MAS".len());
 
                 if itertools::equal(potential_match, "MAS".chars()) {
                     matches += 1;
@@ -62,7 +59,7 @@ fn task_2(input: &str) -> Result<i64> {
         ['S', 'S', 'M', 'M'],
     ];
 
-    let word_search: Array2<char> = Array2::from_2d_text(input)?;
+    let word_search = CharGrid::from_text(input)?;
 
     let mut matches = 0;
     for row in 1..(word_search.nrows() - 1) {

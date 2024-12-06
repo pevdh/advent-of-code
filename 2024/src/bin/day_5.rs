@@ -79,20 +79,15 @@ fn parse(input: &str) -> Result<ParsedInput> {
     let mut rules: HashMap<i64, Vec<i64>> = HashMap::default();
 
     for rule in page_order_rules_part.lines() {
-        let (first, second) = rule.split_once("|").ok_or_parse_error()?;
-        let (first, second) = (first.parse()?, second.parse()?);
+        let (first, second) = parse_num_pair(rule)?;
 
         rules.entry(first).or_default().push(second);
     }
 
     let pages_to_produce_in_each_update: Vec<Vec<i64>> = page_updates_part
         .lines()
-        .map(|line| {
-            line.split(",")
-                .map(|n| n.parse::<i64>().unwrap())
-                .collect::<Vec<i64>>()
-        })
-        .collect();
+        .map(parse_nums)
+        .collect::<Result<_>>()?;
 
     Ok((pages_to_produce_in_each_update, rules))
 }

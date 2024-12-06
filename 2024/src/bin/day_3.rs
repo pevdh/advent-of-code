@@ -35,7 +35,7 @@ fn task_1(input: &str) -> Result<i64> {
 }
 
 fn task_2(input: &str) -> Result<i64> {
-    let regex = Regex::new(r"(do\(\))|(don\'t\(\))|((mul)\((?<left>\d+),(?<right>\d+)\))").unwrap();
+    let regex = Regex::new(r"(do\(\))|(don\'t\(\))|((mul)\((?<left>\d+),(?<right>\d+)\))")?;
 
     let mut result = 0;
     let mut enabled = true;
@@ -47,8 +47,8 @@ fn task_2(input: &str) -> Result<i64> {
         } else if op.starts_with("don't(") {
             enabled = false;
         } else if op.starts_with("mul(") && enabled {
-            let left: i64 = capture.name("left").unwrap().as_str().parse().unwrap();
-            let right: i64 = capture.name("right").unwrap().as_str().parse().unwrap();
+            let left: i64 = capture.name("left").unwrap().as_str().parse()?;
+            let right: i64 = capture.name("right").unwrap().as_str().parse()?;
 
             result += left * right;
         }

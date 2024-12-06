@@ -17,11 +17,7 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<usize> {
-    let reports = input.lines().map(|line| {
-        line.split_whitespace()
-            .map(|l| l.parse::<i64>().unwrap())
-            .collect::<Vec<i64>>()
-    });
+    let reports = input.lines().map(|line| parse_nums(line).unwrap());
 
     let num_safe_reports = reports
         .filter(|report| is_safe(report.iter().copied()))
@@ -31,11 +27,7 @@ fn task_1(input: &str) -> Result<usize> {
 }
 
 fn task_2(input: &str) -> Result<usize> {
-    let reports = input.lines().map(|line| {
-        line.split_whitespace()
-            .map(|l| l.parse::<i64>().unwrap())
-            .collect::<Vec<i64>>()
-    });
+    let reports = input.lines().map(|line| parse_nums(line).unwrap());
 
     let num_safe_reports = reports
         .filter(|report| is_safe(report.iter().copied()) || is_safe_with_tolerance(report))

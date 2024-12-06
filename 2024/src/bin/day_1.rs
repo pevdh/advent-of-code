@@ -21,9 +21,7 @@ fn task_1(input: &str) -> Result<i64> {
     let mut right_list = Vec::new();
 
     for line in input.lines() {
-        let mut iter = line.split_whitespace();
-        let left = iter.next().unwrap().parse::<i64>()?;
-        let right = iter.next().unwrap().parse::<i64>()?;
+        let (left, right) = parse_num_pair(line)?;
         left_list.push(left);
         right_list.push(right);
     }
@@ -45,9 +43,7 @@ fn task_2(input: &str) -> Result<i64> {
     let mut right_list = Vec::new();
 
     for line in input.lines() {
-        let mut iter = line.split_whitespace();
-        let left = iter.next().unwrap().parse::<i64>()?;
-        let right = iter.next().unwrap().parse::<i64>()?;
+        let (left, right) = parse_num_pair(line)?;
         left_list.push(left);
         right_list.push(right);
     }

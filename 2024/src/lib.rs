@@ -1,26 +1,32 @@
+mod array;
+mod char_grid;
+mod mat;
+
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::io;
 use std::io::Write;
-use std::ops::Range;
+use std::ops::Index;
 use std::time::{Duration, Instant};
 
-use ascii::{AsAsciiStr, AsciiChar, AsciiStr};
-use ndarray::{ArrayBase, Data, Ix2, RawData};
-use nom::error::{VerboseError, convert_error};
+use ascii::{AsciiChar, AsciiStr};
+use nom::error::{convert_error, VerboseError};
 use nom::{Err, IResult};
 use num_traits::PrimInt;
 
-pub use std::collections::VecDeque;
-
 use rustc_hash::{FxHashMap, FxHashSet};
+pub use std::collections::VecDeque;
+use std::sync::LazyLock;
 pub type HashSet<V> = FxHashSet<V>;
 pub type HashMap<K, V> = FxHashMap<K, V>;
+pub use array::*;
+pub use char_grid::*;
+pub use mat::*;
 
-pub use eyre::Context;
 pub use eyre::eyre;
+pub use eyre::Context;
 pub use itertools::Itertools;
-pub use ndarray::{Array2, ArrayView2};
+use regex::Regex;
 
 pub type Result<T, E = eyre::Error> = eyre::Result<T, E>;
 
@@ -155,182 +161,6 @@ pub trait Frequencies<FreqType: PrimInt>: Iterator {
 
 impl<It: ?Sized, FreqType: PrimInt> Frequencies<FreqType> for It where It: Iterator {}
 
-pub struct Neighborhood {
-    neighbors: [(usize, usize); 8],
-    alive: Range<usize>,
-}
-
-pub trait Neighbors {
-    fn moore_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood;
-    fn von_neumann_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood;
-}
-
-impl<S: RawData> Neighbors for ArrayBase<S, Ix2> {
-    fn moore_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood {
-        let mut neighbors = [(0, 0); 8];
-        let mut size = 0;
-
-        for rel_pos in [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (0, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1),
-        ] {
-            let new_pos = (pos.0 as i32 + rel_pos.0, pos.1 as i32 + rel_pos.1);
-
-            let in_bounds = new_pos.0 >= 0
-                && new_pos.1 >= 0
-                && new_pos.0 < self.nrows() as i32
-                && new_pos.1 < self.ncols() as i32;
-
-            if in_bounds {
-                neighbors[size] = (new_pos.0 as usize, new_pos.1 as usize);
-                size += 1;
-            }
-        }
-
-        Neighborhood {
-            neighbors,
-            alive: 0..size,
-        }
-    }
-
-    fn von_neumann_neighborhood(&self, pos: &(usize, usize)) -> Neighborhood {
-        let mut neighbors = [(0, 0); 8];
-
-        let mut size = 0;
-        for rel_pos in [(-1, 0), (0, -1), (0, 1), (1, 0)] {
-            let new_pos = (pos.0 as i32 + rel_pos.0, pos.1 as i32 + rel_pos.1);
-
-            let in_bounds = new_pos.0 >= 0
-                && new_pos.1 >= 0
-                && new_pos.0 < self.nrows() as i32
-                && new_pos.1 < self.ncols() as i32;
-
-            if in_bounds {
-                neighbors[size] = (new_pos.0 as usize, new_pos.1 as usize);
-                size += 1;
-            }
-        }
-
-        Neighborhood {
-            neighbors,
-            alive: 0..size,
-        }
-    }
-}
-
-impl Iterator for Neighborhood {
-    type Item = (usize, usize);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.alive
-            .next()
-            .map(|idx| unsafe { *self.neighbors.get_unchecked(idx) })
-    }
-}
-
-pub trait FromLines<S: Sized> {
-    fn from_2d_text_digits(raw_input: &str) -> Result<S>;
-}
-
-impl<T: PrimInt> FromLines<Array2<T>> for Array2<T> {
-    fn from_2d_text_digits(raw_input: &str) -> Result<Array2<T>> {
-        let cols = raw_input
-            .lines()
-            .next()
-            .map(|l| l.len())
-            .ok_or_else(|| eyre!("Empty input"))?;
-        let rows = raw_input.lines().count();
-
-        let data: Result<Vec<T>> = raw_input
-            .replace('\n', "")
-            .chars()
-            .map(|c| {
-                c.to_digit(10)
-                    .map(|d| T::from(d).unwrap())
-                    .ok_or_else(|| eyre!("Unable to convert char to digit"))
-            })
-            .collect();
-
-        Ok(Array2::from_shape_vec((rows, cols), data?)?)
-    }
-}
-
-pub trait FromLines2<S: Sized> {
-    fn from_2d_text(raw_input: &str) -> Result<S>;
-}
-
-impl FromLines2<Array2<char>> for Array2<char> {
-    fn from_2d_text(raw_input: &str) -> Result<Array2<char>> {
-        let cols = raw_input
-            .lines()
-            .next()
-            .map(|l| l.len())
-            .ok_or_else(|| eyre!("Empty input"))?;
-        let rows = raw_input.lines().count();
-
-        let data: Vec<char> = raw_input.replace('\n', "").chars().collect();
-
-        Ok(Array2::from_shape_vec((rows, cols), data)?)
-    }
-}
-
-pub struct StringColumns<'a> {
-    lines: Vec<&'a AsciiStr>,
-    column_index: usize,
-    longest_line_len: usize,
-    scratch_space: String,
-}
-
-impl Iterator for StringColumns<'_> {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.column_index >= self.longest_line_len {
-            return None;
-        }
-
-        self.scratch_space.clear();
-
-        for line in &self.lines {
-            if let Some(ch) = line.chars().nth(self.column_index) {
-                self.scratch_space.push(ch.as_char());
-            } else {
-                self.scratch_space.push('\0');
-            }
-        }
-
-        self.column_index += 1;
-
-        Some(self.scratch_space.clone())
-    }
-}
-
-pub trait StringTools<'a> {
-    fn columns(&'a self) -> StringColumns<'a>;
-}
-
-impl<'a> StringTools<'a> for &'a str {
-    fn columns(&'a self) -> StringColumns<'a> {
-        let lines = self.as_ascii_str().unwrap().lines().collect::<Vec<_>>();
-        let column_index = 0;
-
-        let longest_line_len = lines.iter().map(|line| line.len()).max().unwrap_or(0);
-
-        StringColumns {
-            lines,
-            scratch_space: String::with_capacity(longest_line_len),
-            column_index,
-            longest_line_len,
-        }
-    }
-}
-
 pub trait AsciiStrTools {
     fn starts_with(&self, s: &AsciiStr) -> bool;
 }
@@ -372,7 +202,11 @@ impl AsciiCharTools for AsciiChar {
                 .saturating_add(10);
         }
         // FIXME: once then_some is const fn, use it here
-        if digit < radix { Some(digit) } else { None }
+        if digit < radix {
+            Some(digit)
+        } else {
+            None
+        }
     }
 }
 
@@ -420,78 +254,58 @@ where
     }
 }
 
-pub struct StepIter2<'a, T> {
-    view: ArrayView2<'a, T>,
-    step: (i32, i32),
-    current: (usize, usize),
-}
-
-pub trait Array2Tools<'a, T> {
-    fn step_from(self, init: (usize, usize), step: (i32, i32)) -> StepIter2<'a, T>;
-}
-
-impl<'a, T> Array2Tools<'a, T> for ArrayView2<'a, T> {
-    fn step_from(self, init: (usize, usize), step: (i32, i32)) -> StepIter2<'a, T> {
-        StepIter2 {
-            view: self,
-            current: init,
-            step,
-        }
-    }
-}
-
-impl<T> Iterator for StepIter2<'_, T>
-where
-    T: Copy,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current.0 == 0 && self.step.0 < 0 {
-            return None;
-        }
-
-        if self.current.1 == 0 && self.step.1 < 0 {
-            return None;
-        }
-
-        self.current.0 = ((self.current.0 as i32) + self.step.0) as usize;
-        self.current.1 = ((self.current.1 as i32) + self.step.1) as usize;
-
-        self.view.get((self.current.0, self.current.1)).copied()
-    }
-}
-
 pub trait OptionTools<T> {
     fn ok_or_parse_error(self) -> Result<T>;
 }
 
 impl<T> OptionTools<T> for Option<T> {
     fn ok_or_parse_error(self) -> Result<T> {
-        self.ok_or(eyre!("Parse error"))
+        self.ok_or(eyre!("parse error"))
     }
 }
 
-pub fn print_grid<A>(grid: &ArrayBase<A, Ix2>)
-where
-    A: Data,
-    A::Elem: Display,
-{
-    for i in 0..grid.nrows() {
-        for j in 0..grid.ncols() {
-            print!("{}", grid[(i, j)]);
-        }
-        println!();
+static NUM_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\d+)").unwrap());
+
+pub fn parse_nums(str: &str) -> Result<Vec<i64>> {
+    let nums = NUM_REGEX
+        .captures_iter(str)
+        .map(|c| c.get(1).unwrap())
+        .map(|c| c.as_str().parse::<i64>().unwrap())
+        .collect::<Vec<i64>>();
+
+    Ok(nums)
+}
+
+pub fn parse_num_pair(str: &str) -> Result<(i64, i64)> {
+    let nums = parse_nums(str)?;
+    if nums.len() != 2 {
+        return Err(eyre!(
+            "expected 2 numbers, but found {} numbers",
+            nums.len()
+        ));
     }
-    println!();
+
+    Ok((nums[0], nums[1]))
 }
 
-pub trait TupleTools {
-    fn into_index(self) -> (usize, usize);
+pub fn parse_num_triple(str: &str) -> Result<(i64, i64, i64)> {
+    let nums = parse_nums(str)?;
+    if nums.len() != 3 {
+        return Err(eyre!(
+            "expected 3 numbers, but found {} numbers",
+            nums.len()
+        ));
+    }
+
+    Ok((nums[0], nums[1], nums[2]))
 }
 
-impl TupleTools for (i64, i64) {
-    fn into_index(self) -> (usize, usize) {
-        (self.0 as usize, self.1 as usize)
+#[cfg(test)]
+mod tests {
+    use super::parse_nums;
+
+    #[test]
+    pub fn test_parse_nums() {
+        assert_eq!(parse_nums("1 2s3\n4#5").unwrap(), vec![1, 2, 3, 4, 5],);
     }
 }

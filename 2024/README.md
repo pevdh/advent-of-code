@@ -5,7 +5,7 @@ Written in Rust (again).
 Run with:
 
 ```shell
-cargo run --bin day_1
+cargo run --release --bin day_1
 ```
 
 🦀🦀🦀
