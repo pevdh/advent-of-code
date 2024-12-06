@@ -2,7 +2,7 @@
 name = "aoc2024"
 version = "0.1.0"
 authors = ["Pieter van den Ham <p.e.vandenham@gmail.com>"]
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 itertools = "0.10.3"

@@ -2,3 +2,4 @@
 input/
 /target
 Cargo.lock
+aoc_cookie.txt

@@ -126,26 +126,10 @@ macro_rules! aoc_main {
             use std::time::Instant;
             let start = Instant::now();
             color_eyre::install().unwrap();
-            match run(&input, &solution) {
-                Err(e) => {
-                    eprintln!("\n\nError encountered - rerunning with backtrace enabled\n");
-                    unsafe {
-                        std::env::set_var("RUST_BACKTRACE", "full");
-                    }
-                    let err = if let Err(e) = run(&input, &solution) {
-                        e
-                    } else {
-                        eyre!("Solution did not error when we tried to capture a backtrace")
-                    };
 
-                    eprintln!("\n\nCaptured error with backtrace:");
-                    eprintln!("{:?}", err);
-                },
-                Ok(timing_info) => {
-                    let total = timing_info.task_1 + timing_info.task_2;
-                    println!("task 1: {:?} | task 2: {:?} | total: {:?}", timing_info.task_1, timing_info.task_2, total)
-                },
-            }
+            let timing_info = run(&input, &solution).unwrap();
+            let total = timing_info.task_1 + timing_info.task_2;
+            println!("task 1: {:?} | task 2: {:?} | total: {:?}", timing_info.task_1, timing_info.task_2, total)
         }
     };
 
