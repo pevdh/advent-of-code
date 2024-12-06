@@ -47,16 +47,23 @@ fn task_2(input: &str) -> Result<usize> {
 
     let obstruction_positions = visited
         .into_iter()
-        .map(|(_dir, pos)| pos)
         .unique()
-        .filter(|&pos| pos != initial_position)
+        .filter(|&(_dir, pos)| pos != initial_position)
         .collect_vec();
 
     let num_looping_obstacle_positions = obstruction_positions
         .par_iter()
-        .filter(|&obstruction_pos| {
-            let (_, did_loop) =
-                simulate(&grid, initial_position, initial_dir, Some(*obstruction_pos));
+        .filter(|&(guard_dir, obstruction_position)| {
+            // simulate from right before the obstruction
+            let step_before_obstruction =
+                try_move_backward(&grid, *guard_dir, *obstruction_position).unwrap();
+
+            let (_, did_loop) = simulate(
+                &grid,
+                step_before_obstruction,
+                *guard_dir,
+                Some(*obstruction_position),
+            );
 
             did_loop
         })
@@ -78,7 +85,7 @@ fn simulate(
     visited.insert((current_dir, current_position));
 
     loop {
-        match try_move_into_direction(grid, &current_position, current_dir) {
+        match try_move_forward(grid, current_position, current_dir) {
             Some(new_pos) => {
                 if grid[new_pos] == '#' || Some(new_pos) == obstruction {
                     current_dir = turn_right(current_dir);
@@ -96,11 +103,7 @@ fn simulate(
     }
 }
 
-fn try_move_into_direction(
-    grid: &Array2<char>,
-    pos: &(usize, usize),
-    dir: char,
-) -> Option<(usize, usize)> {
+fn try_move_forward(grid: &Array2<char>, pos: (usize, usize), dir: char) -> Option<(usize, usize)> {
     match dir {
         '^' if pos.0 > 0 => Some((pos.0 - 1, pos.1)),
         'v' if pos.0 + 1 < grid.nrows() => Some((pos.0 + 1, pos.1)),
@@ -108,6 +111,14 @@ fn try_move_into_direction(
         '>' if pos.1 + 1 < grid.ncols() => Some((pos.0, pos.1 + 1)),
         _ => None,
     }
+}
+
+fn try_move_backward(
+    grid: &Array2<char>,
+    dir: char,
+    pos: (usize, usize),
+) -> Option<(usize, usize)> {
+    try_move_forward(grid, pos, turn_right(turn_right(dir)))
 }
 
 fn turn_right(dir: char) -> char {
