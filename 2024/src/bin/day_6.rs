@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use aoc2024::*;
+use rayon::prelude::*;
 
 aoc_main!(
     day: 6,
@@ -30,13 +29,13 @@ fn task_1(input: &str) -> Result<usize> {
         .find(|&(_, v)| ['^', 'v', '>', '<'].contains(v))
         .unwrap();
 
-    let (visited, _did_loop) = simulate(&grid, initial_position, *initial_dir);
+    let (visited, _did_loop) = simulate(&grid, initial_position, *initial_dir, None);
 
     Ok(visited.iter().map(|&(_, pos)| pos).unique().count())
 }
 
 fn task_2(input: &str) -> Result<usize> {
-    let mut grid = Array2::from_2d_text(input)?;
+    let grid = Array2::from_2d_text(input)?;
 
     let (initial_position, initial_dir) = grid
         .indexed_iter()
@@ -44,23 +43,26 @@ fn task_2(input: &str) -> Result<usize> {
         .find(|&(_, v)| ['^', 'v', '>', '<'].contains(&v))
         .unwrap();
 
-    let (visited, _) = simulate(&grid, initial_position, initial_dir);
+    let (visited, _) = simulate(&grid, initial_position, initial_dir, None);
 
-    let num_obstacle_locations = visited
-        .iter()
+    let obstruction_positions = visited
+        .into_iter()
         .map(|(_dir, pos)| pos)
         .unique()
-        .filter(|&pos| *pos != initial_position)
-        .filter(|&pos| {
-            grid[*pos] = '#';
-            let (_, did_loop) = simulate(&grid, initial_position, initial_dir);
-            grid[*pos] = '.';
+        .filter(|&pos| pos != initial_position)
+        .collect_vec();
+
+    let num_looping_obstacle_positions = obstruction_positions
+        .par_iter()
+        .filter(|&obstruction_pos| {
+            let (_, did_loop) =
+                simulate(&grid, initial_position, initial_dir, Some(*obstruction_pos));
 
             did_loop
         })
         .count();
 
-    Ok(num_obstacle_locations)
+    Ok(num_looping_obstacle_positions)
 }
 
 #[allow(clippy::type_complexity)]
@@ -68,6 +70,7 @@ fn simulate(
     grid: &Array2<char>,
     initial_position: (usize, usize),
     initial_dir: char,
+    obstruction: Option<(usize, usize)>,
 ) -> (HashSet<(char, (usize, usize))>, bool) {
     let mut current_position = initial_position;
     let mut current_dir = initial_dir;
@@ -77,7 +80,7 @@ fn simulate(
     loop {
         match try_move_into_direction(grid, &current_position, current_dir) {
             Some(new_pos) => {
-                if grid[new_pos] == '#' {
+                if grid[new_pos] == '#' || Some(new_pos) == obstruction {
                     current_dir = turn_right(current_dir);
                 } else {
                     current_position = new_pos;
