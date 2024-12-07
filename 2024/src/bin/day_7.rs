@@ -1,4 +1,5 @@
 use aoc2024::*;
+use rayon::prelude::*;
 use std::cmp::max;
 
 aoc_main!(
@@ -21,33 +22,41 @@ aoc_main!(
 );
 
 fn task_1(input: &str) -> Result<i64> {
-    let mut res = 0;
+    let equations = input
+        .lines()
+        .map(|line| parse_nums(line).unwrap())
+        .collect_vec();
 
-    for line in input.lines() {
-        let nums = parse_nums(line)?;
-        let target = nums[0];
-        let numbers = &nums[1..];
+    let res = equations
+        .into_iter()
+        .filter(|equation| {
+            let target = equation[0];
+            let nums = &equation[1..];
 
-        if is_valid(target, numbers, false) {
-            res += target;
-        }
-    }
+            is_valid(target, nums, false)
+        })
+        .map(|equation| equation[0])
+        .sum();
 
     Ok(res)
 }
 
 fn task_2(input: &str) -> Result<i64> {
-    let mut res = 0;
+    let equations = input
+        .lines()
+        .map(|line| parse_nums(line).unwrap())
+        .collect_vec();
 
-    for line in input.lines() {
-        let nums = parse_nums(line)?;
-        let target = nums[0];
-        let numbers = &nums[1..];
+    let res = equations
+        .par_iter()
+        .filter(|equation| {
+            let target = equation[0];
+            let nums = &equation[1..];
 
-        if is_valid(target, numbers, true) {
-            res += target;
-        }
-    }
+            is_valid(target, nums, true)
+        })
+        .map(|equation| equation[0])
+        .sum();
 
     Ok(res)
 }
@@ -57,7 +66,7 @@ fn is_valid(target: i64, numbers: &[i64], concat_op: bool) -> bool {
         if numbers.is_empty() {
             return target == curr;
         }
-        
+
         if curr > target {
             return false;
         }
