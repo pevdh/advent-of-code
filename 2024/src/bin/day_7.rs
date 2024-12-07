@@ -57,6 +57,10 @@ fn is_valid(target: i64, numbers: &[i64], concat_op: bool) -> bool {
         if numbers.is_empty() {
             return target == curr;
         }
+        
+        if curr > target {
+            return false;
+        }
 
         is_valid_rec(target, &numbers[1..], curr + numbers[0], concat_op)
             || is_valid_rec(target, &numbers[1..], curr * numbers[0], concat_op)
