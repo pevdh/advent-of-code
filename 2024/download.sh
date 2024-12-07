@@ -1,4 +1,7 @@
 #! /usr/bin/env bash
+# Usage: ./download.sh [day] [day] [day] ...
+# pro-tip: use shell expansion to download multiple days at once: ./download.sh {1..25}
+
 set -euo pipefail
 
 AOC_SESSION=$(cat aoc_cookie.txt)
