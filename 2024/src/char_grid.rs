@@ -3,6 +3,7 @@ use eyre::eyre;
 use std::fmt::Formatter;
 use std::ops::{Index, IndexMut};
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct CharGrid {
     data: Array2<char>,
 }
@@ -50,6 +51,10 @@ impl CharGrid {
         CharGrid {
             data: self.data.transposed(),
         }
+    }
+
+    pub fn in_bounds(&self, pos: &(i64, i64)) -> bool {
+        pos.0 >= 0 && pos.0 < self.nrows() && pos.1 >= 0 && pos.1 < self.ncols()
     }
 }
 
