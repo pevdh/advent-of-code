@@ -1,33 +1,11 @@
-use crate::array::Array2Ops;
-use crate::array::{Array2, Array2Backed};
+/// Matrix type and related functions
+use crate::array::Array2D;
 use crate::*;
 use eyre::eyre;
-use std::ops::{AddAssign, IndexMut};
 
-#[derive(Eq, PartialEq, Clone)]
-pub struct Mat {
-    data: Array2<i64>,
-}
+pub type Mat = Array2D<i64>;
 
 impl Mat {
-    pub fn from_shape_vec(shape: (i64, i64), data: Vec<i64>) -> Mat {
-        if shape.0 <= 0 || shape.1 <= 0 {
-            panic!("invalid shape {:?}", shape);
-        }
-
-        if (shape.0 * shape.1) as usize > data.len() {
-            panic!(
-                "invalid shape {:?} for vector with length {:?}",
-                shape,
-                data.len()
-            );
-        }
-
-        Mat {
-            data: Array2::new(shape, data),
-        }
-    }
-
     pub fn from_digits(raw_input: &str) -> Result<Mat> {
         let cols = raw_input
             .lines()
@@ -70,63 +48,9 @@ impl Mat {
             panic!("invalid shape: {:?}", shape)
         }
 
-        let data = vec![0; (shape.0 * shape.1) as usize];
+        let data = vec![0i64; (shape.0 * shape.1) as usize];
 
-        Mat {
-            data: Array2::new(shape, data),
-        }
-    }
-
-    pub fn transposed(&self) -> Mat {
-        Mat {
-            data: self.data.transposed(),
-        }
-    }
-}
-
-impl Array2Backed<i64> for Mat {
-    fn backing_array(&self) -> &Array2<i64> {
-        &self.data
-    }
-}
-
-impl Debug for Mat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut s = String::new();
-        for row in self.rows() {
-            s.push_str(&format!("{:?}\n", row));
-        }
-        write!(f, "{}", s)
-    }
-}
-
-impl Index<(i64, i64)> for Mat {
-    type Output = i64;
-
-    fn index(&self, index: (i64, i64)) -> &Self::Output {
-        &self.data[index]
-    }
-}
-
-impl IndexMut<(i64, i64)> for Mat {
-    fn index_mut(&mut self, index: (i64, i64)) -> &mut Self::Output {
-        &mut self.data[index]
-    }
-}
-
-impl AddAssign<Mat> for Mat {
-    fn add_assign(&mut self, rhs: Mat) {
-        for index in self.indices() {
-            self[index] += rhs[index];
-        }
-    }
-}
-
-impl AddAssign<&Mat> for Mat {
-    fn add_assign(&mut self, rhs: &Mat) {
-        for index in self.indices() {
-            self[index] += rhs[index];
-        }
+        Self::from_shape_vec(shape, data)
     }
 }
 
@@ -311,7 +235,7 @@ mod tests {
         
         assert_eq!(
             format!("{:?}", mat),
-            "[1, 2, 3]\n[4, 5, 6]\n",
+            "1 2 3 \n4 5 6 \n",
         )
     }
 }

@@ -45,14 +45,14 @@ fn task_1(input: &str) -> Result<usize> {
     for (a, b) in antenna_pairs {
         let dist_a_to_b = (b.0 - a.0, b.1 - a.1);
         let first_antinode = (b.0 + dist_a_to_b.0, b.1 + dist_a_to_b.1);
-        if antenna_map.in_bounds(&first_antinode) {
+        if antenna_map.in_bounds(first_antinode) {
             antinode_locations.insert(first_antinode);
         }
 
         let dist_b_to_a = (a.0 - b.0, a.1 - b.1);
         let second_antinode = (a.0 + dist_b_to_a.0, a.1 + dist_b_to_a.1);
 
-        if antenna_map.in_bounds(&second_antinode) {
+        if antenna_map.in_bounds(second_antinode) {
             antinode_locations.insert(second_antinode);
         }
     }
@@ -101,7 +101,7 @@ fn points_on_line(
 
         Some((row, col))
     })
-    .take_while(|p| grid.in_bounds(p));
+    .take_while(|&p| grid.in_bounds(p));
 
     let b = std::iter::from_fn(move || {
         let (row, col) = (from.0 + -dy * k, from.1 + -dx * k);
@@ -109,7 +109,7 @@ fn points_on_line(
 
         Some((row, col))
     })
-    .take_while(|p| grid.in_bounds(p));
+    .take_while(|&p| grid.in_bounds(p));
 
     a.chain(b)
 }

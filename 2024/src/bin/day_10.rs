@@ -49,24 +49,21 @@ fn task_2(input: &str) -> Result<usize> {
 }
 
 fn reachable_peaks(trailhead: (i64, i64), grid: &Mat) -> Vec<(i64, i64)> {
-    let mut to_visit = vec![trailhead];
-    let mut reached = vec![];
+    let mut to_visit = vec![(trailhead, 0)];
+    let mut peaks = vec![];
 
-    while let Some(pos) = to_visit.pop() {
-        if grid[pos] == 9 {
-            reached.push(pos);
+    while let Some((pos, height)) = to_visit.pop() {
+        if height == 9 {
+            peaks.push(pos);
             continue;
         }
 
-        let height = grid[pos];
         let reachable_neighbors = grid
             .indexed_von_neumann_neighborhood(pos)
             .filter(|&(_pos, neighbor_height)| neighbor_height - height == 1);
 
-        for (neighbor, _) in reachable_neighbors {
-            to_visit.push(neighbor);
-        }
+        to_visit.extend(reachable_neighbors);
     }
 
-    reached
+    peaks
 }
