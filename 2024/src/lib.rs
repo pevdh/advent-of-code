@@ -300,6 +300,10 @@ pub fn parse_num_triple(str: &str) -> Result<(i64, i64, i64)> {
     Ok((nums[0], nums[1], nums[2]))
 }
 
+pub fn set_of<T: Copy + PartialEq + Eq + Hash>(v1: &[T]) -> HashSet<T> {
+    HashSet::from_iter(v1.iter().copied())
+}
+
 #[cfg(test)]
 mod tests {
     use super::parse_nums;

@@ -28,7 +28,7 @@ impl Mat {
         }
     }
 
-    pub fn from_single_digits(raw_input: &str) -> Result<Mat> {
+    pub fn from_digits(raw_input: &str) -> Result<Mat> {
         let cols = raw_input
             .lines()
             .next()
@@ -172,7 +172,7 @@ mod tests {
         ]);
     
         assert_eq!(
-            Mat::from_single_digits(input).unwrap(),
+            Mat::from_digits(input).unwrap(),
             expected,
         )
     }
