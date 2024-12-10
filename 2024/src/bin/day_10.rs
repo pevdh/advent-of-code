@@ -35,7 +35,7 @@ fn task_1(input: &str) -> Result<usize> {
 
 fn task_2(input: &str) -> Result<usize> {
     let grid: Mat = Mat::from_digits(input)?;
-    
+
     let trailheads = grid
         .indexed_iter()
         .filter(|(_idx, height)| *height == 0)
@@ -49,13 +49,10 @@ fn task_2(input: &str) -> Result<usize> {
 }
 
 fn reachable_peaks(trailhead: (i64, i64), grid: &Mat) -> Vec<(i64, i64)> {
-    let mut working_queue = VecDeque::new();
+    let mut to_visit = vec![trailhead];
+    let mut reached = vec![];
 
-    working_queue.push_back((trailhead, set_of(&[trailhead])));
-
-    let mut reached: Vec<(i64, i64)> = vec![];
-
-    while let Some((pos, seen)) = working_queue.pop_front() {
+    while let Some(pos) = to_visit.pop() {
         if grid[pos] == 9 {
             reached.push(pos);
             continue;
@@ -67,11 +64,7 @@ fn reachable_peaks(trailhead: (i64, i64), grid: &Mat) -> Vec<(i64, i64)> {
             .filter(|&(_pos, neighbor_height)| neighbor_height - height == 1);
 
         for (neighbor, _) in reachable_neighbors {
-            if !seen.contains(&neighbor) {
-                let mut s = seen.clone();
-                s.insert(neighbor);
-                working_queue.push_back((neighbor, s));
-            }
+            to_visit.push(neighbor);
         }
     }
 
