@@ -2,7 +2,7 @@ use crate::array::Array2Ops;
 use crate::array::{Array2, Array2Backed};
 use crate::*;
 use eyre::eyre;
-use std::ops::IndexMut;
+use std::ops::{AddAssign, IndexMut};
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Mat {
@@ -111,6 +111,22 @@ impl Index<(i64, i64)> for Mat {
 impl IndexMut<(i64, i64)> for Mat {
     fn index_mut(&mut self, index: (i64, i64)) -> &mut Self::Output {
         &mut self.data[index]
+    }
+}
+
+impl AddAssign<Mat> for Mat {
+    fn add_assign(&mut self, rhs: Mat) {
+        for index in self.indices() {
+            self[index] += rhs[index];
+        }
+    }
+}
+
+impl AddAssign<&Mat> for Mat {
+    fn add_assign(&mut self, rhs: &Mat) {
+        for index in self.indices() {
+            self[index] += rhs[index];
+        }
     }
 }
 

@@ -64,22 +64,22 @@ impl<T: Copy> Array2<T> {
         }
     }
 
-    pub fn indices(&self) -> Array2Indices<T> {
+    pub fn indices(&self) -> Array2Indices {
         self.indices_row_major()
     }
 
-    pub fn indices_row_major(&self) -> Array2Indices<T> {
+    pub fn indices_row_major(&self) -> Array2Indices {
         Array2Indices {
-            array: self,
+            shape: self.shape,
             row: 0,
             col: 0,
             order: Order::RowMajor,
         }
     }
 
-    pub fn indices_col_major(&self) -> Array2Indices<T> {
+    pub fn indices_col_major(&self) -> Array2Indices {
         Array2Indices {
-            array: self,
+            shape: self.shape,
             row: 0,
             col: 0,
             order: Order::ColMajor,
@@ -88,18 +88,21 @@ impl<T: Copy> Array2<T> {
 
     pub fn indexed_iter(&self) -> Array2IndexedIter<T> {
         Array2IndexedIter {
+            array: self,
             indices_iter: self.indices(),
         }
     }
 
     pub fn iter_row_major(&self) -> Array2Iter<T> {
         Array2Iter {
+            array: self,
             indices_iter: self.indices_row_major(),
         }
     }
 
     pub fn iter_col_major(&self) -> Array2Iter<T> {
         Array2Iter {
+            array: self,
             indices_iter: self.indices_col_major(),
         }
     }
@@ -165,9 +168,9 @@ pub trait Array2Ops<T> {
 
     fn rows(&self) -> Array2Rows<T>;
     fn cols(&self) -> Array2Cols<T>;
-    fn indices(&self) -> Array2Indices<T>;
-    fn indices_row_major(&self) -> Array2Indices<T>;
-    fn indices_col_major(&self) -> Array2Indices<T>;
+    fn indices(&self) -> Array2Indices;
+    fn indices_row_major(&self) -> Array2Indices;
+    fn indices_col_major(&self) -> Array2Indices;
 
     fn indexed_iter(&self) -> Array2IndexedIter<'_, T>;
     fn iter_row_major(&self) -> Array2Iter<'_, T>;
@@ -238,23 +241,23 @@ enum Order {
     ColMajor,
 }
 
-pub struct Array2Indices<'a, T> {
-    array: &'a Array2<T>,
+pub struct Array2Indices {
+    shape: (i64, i64),
     row: i64,
     col: i64,
     order: Order,
 }
 
-impl<T> Iterator for Array2Indices<'_, T> {
+impl Iterator for Array2Indices {
     type Item = (i64, i64);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.order {
             Order::RowMajor => {
-                if self.row < self.array.shape.0 {
+                if self.row < self.shape.0 {
                     let idx = (self.row, self.col);
                     self.col += 1;
-                    if self.col == self.array.shape.1 {
+                    if self.col == self.shape.1 {
                         self.row += 1;
                         self.col = 0;
                     }
@@ -264,10 +267,10 @@ impl<T> Iterator for Array2Indices<'_, T> {
                 }
             }
             Order::ColMajor => {
-                if self.col < self.array.shape.1 {
+                if self.col < self.shape.1 {
                     let idx = (self.row, self.col);
                     self.row += 1;
-                    if self.row == self.array.shape.0 {
+                    if self.row == self.shape.0 {
                         self.col += 1;
                         self.row = 0;
                     }
@@ -281,30 +284,28 @@ impl<T> Iterator for Array2Indices<'_, T> {
 }
 
 pub struct Array2IndexedIter<'a, T> {
-    indices_iter: Array2Indices<'a, T>,
+    array: &'a Array2<T>,
+    indices_iter: Array2Indices,
 }
 
 impl<T: Copy> Iterator for Array2IndexedIter<'_, T> {
     type Item = ((i64, i64), T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.indices_iter
-            .next()
-            .map(|idx| (idx, self.indices_iter.array[idx]))
+        self.indices_iter.next().map(|idx| (idx, self.array[idx]))
     }
 }
 
 pub struct Array2Iter<'a, T> {
-    indices_iter: Array2Indices<'a, T>,
+    array: &'a Array2<T>,
+    indices_iter: Array2Indices,
 }
 
 impl<T: Copy> Iterator for Array2Iter<'_, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.indices_iter
-            .next()
-            .map(|idx| self.indices_iter.array[idx])
+        self.indices_iter.next().map(|idx| self.array[idx])
     }
 }
 
@@ -345,15 +346,15 @@ where
         self.backing_array().cols()
     }
 
-    fn indices(&self) -> Array2Indices<T> {
+    fn indices(&self) -> Array2Indices {
         self.backing_array().indices()
     }
 
-    fn indices_row_major(&self) -> Array2Indices<T> {
+    fn indices_row_major(&self) -> Array2Indices {
         self.backing_array().indices_row_major()
     }
 
-    fn indices_col_major(&self) -> Array2Indices<T> {
+    fn indices_col_major(&self) -> Array2Indices {
         self.backing_array().indices_col_major()
     }
 

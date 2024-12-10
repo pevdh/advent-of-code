@@ -102,6 +102,10 @@ pub trait GridLike<T> {
 pub trait GridTools<T> {
     fn step_from(&self, init: (i64, i64), step: (i64, i64)) -> impl Iterator<Item = T>;
     fn von_neumann_neighborhood(&self, pos: (i64, i64)) -> impl Iterator<Item = T>;
+    fn indexed_von_neumann_neighborhood(
+        &self,
+        pos: (i64, i64),
+    ) -> impl Iterator<Item = ((i64, i64), T)>;
     fn moore_neighborhood(&self, pos: (i64, i64)) -> impl Iterator<Item = T>;
 }
 
@@ -139,8 +143,36 @@ where
 
                 idx += 1;
 
-                if let Some(ch) = self.at(next_pos) {
-                    return Some(ch);
+                if let Some(value) = self.at(next_pos) {
+                    return Some(value);
+                }
+            }
+
+            None
+        })
+    }
+
+    fn indexed_von_neumann_neighborhood(
+        &self,
+        pos: (i64, i64),
+    ) -> impl Iterator<Item = ((i64, i64), T)> {
+        let neighborhood = [
+            (0, -1), // up
+            (-1, 0), // left
+            (1, 0),  // right
+            (0, 1),  // down
+        ];
+
+        let mut idx = 0;
+
+        std::iter::from_fn(move || {
+            while idx < neighborhood.len() {
+                let next_pos = (pos.0 + neighborhood[idx].0, pos.1 + neighborhood[idx].1);
+
+                idx += 1;
+
+                if let Some(value) = self.at(next_pos) {
+                    return Some((next_pos, value));
                 }
             }
 
